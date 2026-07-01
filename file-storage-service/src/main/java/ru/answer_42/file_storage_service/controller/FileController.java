@@ -1,0 +1,56 @@
+package ru.answer_42.file_storage_service.controller;
+
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import ru.answer_42.file_storage_service.dto.FileRequestDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.service.FileService;
+
+@RestController
+@RequestMapping("/api/files")
+@RequiredArgsConstructor
+public class FileController {
+
+  private final FileService fileService;
+
+  @PostMapping
+  public ResponseEntity<FileResponseDto> create(@RequestBody FileRequestDto fileRequestDto){
+    FileResponseDto fileResponseDto = fileService.save(fileRequestDto);
+    return new ResponseEntity<>(fileResponseDto, HttpStatus.OK);
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<FileResponseDto> readById(@PathVariable UUID id){
+    FileResponseDto fileResponseDto = fileService.findById(id);
+    return ResponseEntity.ok(fileResponseDto);
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<FileResponseDto> update(@PathVariable UUID id, @RequestBody FileRequestDto fileRequestDto){
+    FileResponseDto fileResponseDto = fileService.update(id, fileRequestDto);
+    return ResponseEntity.ok(fileResponseDto);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<FileResponseDto> delete(@PathVariable UUID id){
+    FileResponseDto fileResponseDto = fileService.deleteById(id);
+    return ResponseEntity.ok(fileResponseDto);
+  }
+
+  @GetMapping()
+  public ResponseEntity<List<String>> readTitles(){
+    final List<String> titles = fileService.findAllTitles();
+    return titles != null ? new ResponseEntity<>(titles, HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+  }
+}
