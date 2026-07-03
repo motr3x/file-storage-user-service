@@ -15,10 +15,10 @@ public class InMemoryFileRepository {
 
   private final Map<UUID, File> database = new HashMap<>();
 
-  public File save(UUID id, File file) {
+  public UUID save(UUID id, File file) {
     file.setId(id);
     database.put(id, file);
-    return file;
+    return id;
   }
 
   public List<String> findAllTitles() {

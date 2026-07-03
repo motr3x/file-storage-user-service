@@ -1,16 +1,20 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
+import ru.answer_42.file_storage_service.exception.UnsupportedFileTypeException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
+import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
 import ru.answer_42.file_storage_service.repository.InMemoryFileRepository;
 import ru.answer_42.file_storage_service.service.FileService;
@@ -23,10 +27,17 @@ public class FileServiceImpl implements FileService {
   private final FileMapper fileMapper;
 
   @Override
-  public FileResponseDto save(FileRequestDto fileRequestDto) {
+  public UUID save(FileRequestDto fileRequestDto) {
     File file = fileMapper.toEntity(fileRequestDto);
-    File savedFile = fileRepository.save(UUID.randomUUID(), file);
-    return fileMapper.toFileResponseDto(savedFile);
+    UUID savedFileId = fileRepository.save(UUID.randomUUID(), file);
+    return savedFileId;
+  }
+
+  public void updateStatus(UUID id, Status status){
+    File file = fileRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+    file.setStatus(status);
+    fileRepository.update(file);
   }
 
   public List<FileResponseDto> findAll(String name, LocalDate start, LocalDate end, Type type){
@@ -98,5 +109,29 @@ public class FileServiceImpl implements FileService {
     fileRepository.findById(id).
         orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
     return fileMapper.toFileResponseDto(fileRepository.deleteById(id));
+  }
+
+  @Override
+  public FileRequestDto multipartFileToFileRequestDto(MultipartFile file, Path destinationFile) {
+    FileRequestDto fileEntity = new FileRequestDto();
+    fileEntity.setTitle(file.getOriginalFilename());
+    fileEntity.setSize(file.getSize());
+    fileEntity.setType(determinateType(file));
+    fileEntity.setDownloadUrl(destinationFile.toString());
+    fileEntity.setStatus(Status.UPLOAD);
+    return fileEntity;
+  }
+
+  private Type determinateType(MultipartFile file) {
+    String fileName = file.getOriginalFilename();
+    if (fileName == null || !fileName.contains(".")) {
+      throw new IllegalArgumentException("Invalid filename");
+    }
+    String fileType = fileName.substring(fileName.lastIndexOf(".") + 1);
+    try {
+      return Type.valueOf(fileType.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new UnsupportedFileTypeException(fileType);
+    }
   }
 }

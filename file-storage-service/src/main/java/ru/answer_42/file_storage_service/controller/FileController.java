@@ -23,15 +23,15 @@ import ru.answer_42.file_storage_service.service.FileService;
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
-public class FileStorageController {
+public class FileController {
 
   private final FileService fileService;
 
 
   @PostMapping
   public ResponseEntity<FileResponseDto> create(@RequestBody FileRequestDto fileRequestDto) {
-    FileResponseDto fileResponseDto = fileService.save(fileRequestDto);
-    return new ResponseEntity<>(fileResponseDto, HttpStatus.OK);
+    UUID fileId = fileService.save(fileRequestDto);
+    return new ResponseEntity<>(fileService.findById(fileId), HttpStatus.OK);
   }
 
   @GetMapping("/{id}")
