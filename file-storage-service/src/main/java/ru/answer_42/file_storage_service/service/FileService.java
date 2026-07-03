@@ -1,46 +1,29 @@
 package ru.answer_42.file_storage_service.service;
 
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.model.Type;
 
 public interface FileService {
 
-  /**
-   * Создает новый файл
-   * @param file - файл для создания
-   */
   FileResponseDto save(FileRequestDto file);
 
-  /**
-   * Обновляет файл с заданным ID,
-   * в соответствии с переданным файлом
-   * @param fileDto - файл в соответствии с которым нужно обновить данные
-   * @param id - id файла которой нужно обновить
-   * @return - true если данные были обновлены, иначе false
-   */
   FileResponseDto update(UUID id, FileRequestDto fileDto);
 
-  /**
-   * Удаляет файл с заданным ID
-   * @param id - id файла, который нужно удалить
-   * @return - true если файл был удален, иначе false
-   */
+  FileResponseDto update(FileRequestDto fileDto);
+
   FileResponseDto deleteById(UUID id);
 
-  /**
-   * Возвращает список всех имеющихся файлов
-   * @return список файлов
-   */
   List<String> findAllTitles();
 
-  /**
-   * Возвращает файл по его ID
-   * @param id - ID файла
-   * @return - объект файла с заданным ID
-   */
+  List<FileResponseDto> findAll(String name, LocalDate start, LocalDate end, Type type);
+
   FileResponseDto findById(UUID id);
+
+  FileResponseDto findByTitle(String name);
 
 }

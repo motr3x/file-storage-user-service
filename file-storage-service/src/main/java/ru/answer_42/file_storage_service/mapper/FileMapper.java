@@ -19,8 +19,13 @@ import ru.answer_42.file_storage_service.model.File;
 )
 @Component
 public interface FileMapper {
+  FileRequestDto toFileRequestDto(FileResponseDto fileResponseDto);
+
   FileResponseDto toFileResponseDto(File file);
+
   FileRequestDto toFileDto(File file);
+
   File toEntity(FileRequestDto fileDto);
+
   void updateEntityFromDto(FileRequestDto fileDto, @MappingTarget File file);
 }

@@ -13,6 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comment {
+
   private UUID id;
   private UUID authorId;
   private UUID fileId;

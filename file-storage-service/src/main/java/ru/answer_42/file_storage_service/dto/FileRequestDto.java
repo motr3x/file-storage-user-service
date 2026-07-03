@@ -6,8 +6,10 @@ import ru.answer_42.file_storage_service.model.Type;
 
 @Data
 public class FileRequestDto {
+
   private String title;
   private Type type;
   private Long size;
   private Status status;
+  private String downloadUrl;
 }
