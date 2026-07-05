@@ -1,3 +1,13 @@
 spring:
   application:
     name: user-service
+  kafka:
+    consumer:
+      group-id: "default"
+
+
+server:
+  port: 8081
+
+topic:
+  name: t.file.order

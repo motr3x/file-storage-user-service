@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.kafka.common.quota.ClientQuotaAlteration.Op;
 import org.springframework.stereotype.Repository;
+import ru.answer_42.user_service.model.FileMetadata;
 import ru.answer_42.user_service.model.User;
 
 @Repository
@@ -19,6 +21,15 @@ public class InMemoryUserRepository {
     user.setId(id);
     database.put(id, user);
     return user;
+  }
+
+  public Optional<User> findByLogin(String login){
+    for (Map.Entry<UUID, User> entry : database.entrySet()) {
+      if(entry.getValue().getLogin().equals(login)){
+        return Optional.of(entry.getValue());
+      }
+    }
+    return Optional.empty();
   }
 
   public Optional<User> findById(UUID id){
@@ -37,8 +48,15 @@ public class InMemoryUserRepository {
     return database.remove(id);
   }
 
+  public FileMetadata addFileMetadata(User user, FileMetadata fileMetadata){
+      user.getFiles().add(fileMetadata);
+      update(user);
+      return fileMetadata;
+  }
+
   public User update(User user){
     user.setUpdateDate(LocalDateTime.now());
+    save(user.getId(), user);
     return user;
   }
 }

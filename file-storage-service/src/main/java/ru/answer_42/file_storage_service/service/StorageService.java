@@ -10,7 +10,7 @@ import ru.answer_42.file_storage_service.dto.FileResponseDto;
 public interface StorageService {
   void init();
 
-  FileResponseDto store(MultipartFile file);
+  FileResponseDto store(String userLogin, MultipartFile file);
 
   List<Path> loadAll();
 

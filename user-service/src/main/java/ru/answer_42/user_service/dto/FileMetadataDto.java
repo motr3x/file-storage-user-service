@@ -1,32 +1,28 @@
-package ru.answer_42.file_storage_service.model;
+package ru.answer_42.user_service.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.answer_42.user_service.model.Status;
+import ru.answer_42.user_service.model.Type;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class File {
-
-  private UUID id;
+@AllArgsConstructor
+public class FileMetadataDto {
   private String title;
   private Type type;
   private Long size;
-  private Status status;
-  private UUID userId;
   private String userLogin;
+  private Status status;
   private String downloadUrl;
-  private List<Comment> comments = new ArrayList<>();
   @JsonFormat(pattern = "yyyy-MM-dd")
-  private LocalDate createdAt = LocalDate.now();
+  private LocalDate createdAt;
   @JsonFormat(pattern = "yyyy-MM-dd")
-  private LocalDate updateDate = LocalDate.now();
+  private LocalDate updateDate;
 }

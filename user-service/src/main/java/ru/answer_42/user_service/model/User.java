@@ -18,7 +18,7 @@ public class User {
   private UUID id;
   private String login;
   private Role role;
-  private List<UUID> files = new ArrayList<>();
+  private List<FileMetadata> files = new ArrayList<>();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
   private LocalDateTime createdAt = LocalDateTime.now();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")

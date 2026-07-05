@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.answer_42.user_service.dto.FileDownloadDto;
+import ru.answer_42.user_service.dto.FileMetadataDto;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.service.UserService;
@@ -29,16 +31,28 @@ public class UserController{
     return new ResponseEntity<>(userResponseDto, HttpStatus.OK);
   }
 
-  @GetMapping("/{id}")
-  public ResponseEntity<UserResponseDto> readById(@PathVariable UUID id){
-    UserResponseDto userResponseDto = userService.findById(id);
-    return ResponseEntity.ok(userResponseDto);
-  }
+//  @GetMapping("/{id}")
+//  public ResponseEntity<UserResponseDto> readById(@PathVariable UUID id){
+//    UserResponseDto userResponseDto = userService.findById(id);
+//    return ResponseEntity.ok(userResponseDto);
+//  }
 
   @GetMapping()
   public ResponseEntity<List<UserResponseDto>> readAll(){
     List<UserResponseDto> userResponseDto = userService.findAll();
     return ResponseEntity.ok(userResponseDto);
+  }
+
+  @GetMapping("/{login}/files")
+  public ResponseEntity<List<FileMetadataDto>> readAllFiles(@PathVariable String login){
+    List<FileMetadataDto> fileMetadataDtos = userService.findAllFilesByLogin(login);
+    return ResponseEntity.ok(fileMetadataDtos);
+  }
+
+  @GetMapping("/{login}/links")
+  public ResponseEntity<List<FileDownloadDto>> readAllLinks(@PathVariable String login){
+    List<FileDownloadDto> fileDownloadDtos = userService.findAllLinksByLogin(login);
+    return ResponseEntity.ok(fileDownloadDtos);
   }
 
   @PutMapping("/{id}")

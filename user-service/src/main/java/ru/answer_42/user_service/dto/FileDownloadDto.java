@@ -7,9 +7,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @AllArgsConstructor
-public class UserResponseDto {
-
-  private String login;
+@NoArgsConstructor
+public class FileDownloadDto {
+  private String downloadUrl;
 }

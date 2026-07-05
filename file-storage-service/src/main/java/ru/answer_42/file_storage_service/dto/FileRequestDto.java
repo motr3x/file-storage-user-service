@@ -10,6 +10,7 @@ public class FileRequestDto {
   private String title;
   private Type type;
   private Long size;
+  private String userLogin;
   private Status status;
   private String downloadUrl;
 }

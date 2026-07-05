@@ -13,7 +13,7 @@ import ru.answer_42.file_storage_service.model.Type;
 
 public interface FileService {
 
-  UUID save(FileRequestDto file);
+  UUID save(String login, FileRequestDto file);
 
   FileResponseDto update(UUID id, FileRequestDto fileDto);
 
@@ -25,7 +25,7 @@ public interface FileService {
 
   List<String> findAllTitles();
 
-  List<FileResponseDto> findAll(String name, LocalDate start, LocalDate end, Type type);
+  List<FileResponseDto> findAll(String login, String name, LocalDate start, LocalDate end, Type type);
 
   FileResponseDto findById(UUID id);
 

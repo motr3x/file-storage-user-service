@@ -16,6 +16,8 @@ public class FileResponseDto {
   private Type type;
   private Long size;
   private Status status;
+  private UUID userId;
+  private String userLogin;
   private String downloadUrl;
   @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate createdAt;

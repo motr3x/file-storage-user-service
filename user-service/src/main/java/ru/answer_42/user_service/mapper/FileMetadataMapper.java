@@ -1,13 +1,12 @@
 package ru.answer_42.user_service.mapper;
 
 import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.stereotype.Component;
-import ru.answer_42.user_service.dto.UserRequestDto;
-import ru.answer_42.user_service.dto.UserResponseDto;
-import ru.answer_42.user_service.model.User;
+import ru.answer_42.user_service.dto.FileDownloadDto;
+import ru.answer_42.user_service.dto.FileMetadataDto;
+import ru.answer_42.user_service.model.FileMetadata;
 
 @Mapper(
     componentModel = "spring",
@@ -18,8 +17,8 @@ import ru.answer_42.user_service.model.User;
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
 @Component
-public interface UserMapper {
-  UserResponseDto toUserResponseDto(User user);
-  User toEntity(UserRequestDto userDto);
-  void updateEntityFromDto(UserRequestDto userDto, @MappingTarget User user);
+public interface FileMetadataMapper {
+  FileMetadataDto toFileMetadataDto(FileMetadata fileMetadata);
+  FileMetadata toEntity(FileMetadataDto fileMetadataDto);
+  FileDownloadDto toFileDownloadDto(FileMetadata fileMetadata);
 }

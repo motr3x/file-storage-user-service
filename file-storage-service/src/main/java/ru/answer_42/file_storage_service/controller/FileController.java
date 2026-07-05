@@ -28,9 +28,10 @@ public class FileController {
   private final FileService fileService;
 
 
-  @PostMapping
-  public ResponseEntity<FileResponseDto> create(@RequestBody FileRequestDto fileRequestDto) {
-    UUID fileId = fileService.save(fileRequestDto);
+  @PostMapping("/{login}")
+  public ResponseEntity<FileResponseDto> create(@PathVariable String login,
+      @RequestBody FileRequestDto fileRequestDto) {
+    UUID fileId = fileService.save(login, fileRequestDto);
     return new ResponseEntity<>(fileService.findById(fileId), HttpStatus.OK);
   }
 
@@ -60,12 +61,13 @@ public class FileController {
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
 
-  @GetMapping()
-  public ResponseEntity<List<FileResponseDto>> readAll(@RequestParam(required = false) String name,
+  @GetMapping("/{login}")
+  public ResponseEntity<List<FileResponseDto>> readAll(@PathVariable String login,
+      @RequestParam(required = false) String name,
       @RequestParam(required = false) LocalDate start,
       @RequestParam(required = false) LocalDate end,
       @RequestParam(required = false) Type type) {
-    final List<FileResponseDto> files = fileService.findAll(name, start, end, type);
+    final List<FileResponseDto> files = fileService.findAll(login, name, start, end, type);
     return files != null ? new ResponseEntity<>(files, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }

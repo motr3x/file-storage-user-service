@@ -29,22 +29,25 @@ import ru.answer_42.file_storage_service.exception.StorageException;
 import ru.answer_42.file_storage_service.exception.StorageFileNotFoundException;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.service.AntivirusService;
+import ru.answer_42.file_storage_service.service.FileMetadataService;
 import ru.answer_42.file_storage_service.service.FileService;
 import ru.answer_42.file_storage_service.service.StorageService;
 
 @Service
-public class FileSystemStorageService implements StorageService {
+public class StorageServiceImpl implements StorageService {
 
   private final static long MAX_SIZE = 15 * 1024 * 1024L;
   private final Path rootLocation;
   private final FileService fileService;
   private final AntivirusService antivirusService;
+  private final FileMetadataService fileMetadataService;
 
   @Autowired
-  public FileSystemStorageService(StorageProperties properties, FileService fileService,
-      AntivirusService antivirusService) {
+  public StorageServiceImpl(StorageProperties properties, FileService fileService,
+      AntivirusService antivirusService, FileMetadataService fileMetadataService) {
     this.fileService = fileService;
     this.antivirusService = antivirusService;
+    this.fileMetadataService = fileMetadataService;
     if (properties.getLocation().trim().isEmpty()) {
       throw new StorageException("File upload location can not be Empty.");
     }
@@ -53,7 +56,7 @@ public class FileSystemStorageService implements StorageService {
 
 
   @Override
-  public FileResponseDto store(MultipartFile file) {
+  public FileResponseDto store(String login, MultipartFile file) {
     Executor executor = Executors.newFixedThreadPool(10);
     try {
       if (file.isEmpty()) {
@@ -74,7 +77,7 @@ public class FileSystemStorageService implements StorageService {
             StandardCopyOption.REPLACE_EXISTING);
       }
       FileRequestDto fileEntity = fileService.multipartFileToFileRequestDto(file, destinationFile);
-      UUID fileId = fileService.save(fileEntity);
+      UUID fileId = fileService.save(login, fileEntity);
       CompletableFuture.runAsync(() -> {
         fileService.updateStatus(fileId, Status.IN_PROCESS);
         if (!antivirusService.scan(file)) {
@@ -83,7 +86,9 @@ public class FileSystemStorageService implements StorageService {
       }, executor).thenRunAsync(() -> {
         fileService.updateStatus(fileId, Status.READY);
       }, CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS, executor));
-      return fileService.findById(fileId);
+      FileResponseDto fileResponseDto = fileService.findById(fileId);
+      fileMetadataService.createFileOrder(fileResponseDto);
+      return fileResponseDto;
     } catch (IOException e) {
       throw new StorageException("Failed to store file.", e);
     }

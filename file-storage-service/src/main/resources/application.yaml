@@ -1,3 +1,8 @@
 spring:
   application:
     name: file-storage-service
+server:
+  port: 8080
+
+topic:
+  name: t.file.order

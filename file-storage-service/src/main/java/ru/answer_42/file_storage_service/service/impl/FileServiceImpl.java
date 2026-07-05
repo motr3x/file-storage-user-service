@@ -27,9 +27,9 @@ public class FileServiceImpl implements FileService {
   private final FileMapper fileMapper;
 
   @Override
-  public UUID save(FileRequestDto fileRequestDto) {
+  public UUID save(String login, FileRequestDto fileRequestDto) {
     File file = fileMapper.toEntity(fileRequestDto);
-    UUID savedFileId = fileRepository.save(UUID.randomUUID(), file);
+    UUID savedFileId = fileRepository.save(login, UUID.randomUUID(), file);
     return savedFileId;
   }
 
@@ -40,8 +40,8 @@ public class FileServiceImpl implements FileService {
     fileRepository.update(file);
   }
 
-  public List<FileResponseDto> findAll(String name, LocalDate start, LocalDate end, Type type){
-    Stream<File> files = fileRepository.findAll().stream();
+  public List<FileResponseDto> findAll(String login, String name, LocalDate start, LocalDate end, Type type){
+    Stream<File> files = fileRepository.findAll(login).stream();
     if(name != null) {
       files = files.filter(file -> file.getTitle().contains(name));
     }
