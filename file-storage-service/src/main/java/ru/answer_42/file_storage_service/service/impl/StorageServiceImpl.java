@@ -1,5 +1,8 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -7,16 +10,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -27,6 +39,7 @@ import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.FileHasVirusException;
 import ru.answer_42.file_storage_service.exception.FileIsUnderScanException;
+import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.StorageException;
 import ru.answer_42.file_storage_service.exception.StorageFileNotFoundException;
 import ru.answer_42.file_storage_service.model.File;
@@ -101,13 +114,38 @@ public class StorageServiceImpl implements StorageService {
     }
   }
 
+  @Override
+  public Resource loadAll(String userLogin, List<UUID> fileNames) {
+    Executor executor = Executors.newFixedThreadPool(10);
+    List<CompletableFuture<FileResponseDto>> futures = fileNames.stream()
+        .map(id -> CompletableFuture.supplyAsync(() -> fileService.findById(id),executor)).toList();
+    List<FileResponseDto> desiredFiles = futures.stream().map(CompletableFuture::join).toList();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zout = new ZipOutputStream(baos)) {
+      for (FileResponseDto file : desiredFiles) {
+        ZipEntry entry1 = new ZipEntry(file.getTitle());
+        zout.putNextEntry(entry1);
+        // считываем содержимое файла в массив byte
+        byte[] buffer = file.getFile();
+        // добавляем содержимое к архиву
+        zout.write(buffer);
+        // закрываем текущую запись для новой записи
+        zout.closeEntry();
+
+      }
+    } catch (Exception ex) {
+      System.out.println(ex.getMessage());
+    }
+    ByteArrayResource byteArrayResource = new ByteArrayResource(baos.toByteArray());
+    return byteArrayResource;
+  }
 
   @Override
   public List<Path> loadAll() {
     try {
       return Files.walk(this.rootLocation, 1)
           .filter(path -> !path.equals(this.rootLocation))
-          .map(this.rootLocation::relativize).map(p -> p.getFileName()).toList();
+          .map(this.rootLocation::relativize).map(Path::getFileName).toList();
     } catch (IOException e) {
       throw new StorageException("Failed to read stored files", e);
     }
@@ -120,11 +158,15 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public byte[] loadAsResource(String filename) {
+  public byte[] loadAsResource(String userLogin, String filename) {
 
       Path file = load(filename);
       File resultFile = fileService.findByPath(file);
       if (!ArrayUtils.isEmpty(resultFile.getFile())) {
+        if(!resultFile.getUserLogin().equals(userLogin)){
+          throw new ResourceNotFoundException(
+              "File: " + resultFile.getTitle() + " isn't own " + userLogin);
+        }
         if (resultFile.getStatus().equals(Status.IN_PROCESS)) {
           throw new FileIsUnderScanException(
               "File: " + resultFile.getTitle() + " is under scan");

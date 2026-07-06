@@ -2,6 +2,7 @@ package ru.answer_42.file_storage_service.controller;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,9 +33,9 @@ public class StorageController {
     return ResponseEntity.ok(fileResponseDto);
   }
 
-  @GetMapping("/{filename:.+}")
-  public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-    byte[] file = storageService.loadAsResource(filename);
+  @GetMapping("/{userLogin}/{filename:.+}")
+  public ResponseEntity<Resource> serveFile(@PathVariable String userLogin, @PathVariable String filename) {
+    byte[] file = storageService.loadAsResource(userLogin, filename);
 
     if (file == null) {
       return ResponseEntity.notFound().build();
@@ -45,12 +47,22 @@ public class StorageController {
         "attachment; filename=\"" + filename + "\"").body(resource);
   }
 
-  @GetMapping()
-  public ResponseEntity<List<Path>> listUploadedFiles() {
+  @PostMapping("/{userLogin}")
+  public ResponseEntity<Resource> serveFiles(@PathVariable String userLogin,
+      @RequestBody List<UUID> filesId) {
 
-    List<Path> list = storageService.loadAll();
+    Resource resource = storageService.loadAll(userLogin, filesId);
 
-    return ResponseEntity.ok(list);
+    return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+        "attachment; filename=\"" + "file_archive.zip" + "\"").body(resource);
   }
+
+//  @GetMapping()
+//  public ResponseEntity<List<Path>> listUploadedFiles() {
+//
+//    List<Path> list = storageService.loadAll();
+//
+//    return ResponseEntity.ok(list);
+//  }
 
 }

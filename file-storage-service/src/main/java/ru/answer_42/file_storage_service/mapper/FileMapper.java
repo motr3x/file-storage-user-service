@@ -23,8 +23,6 @@ public interface FileMapper {
 
   FileResponseDto toFileResponseDto(File file);
 
-  FileRequestDto toFileDto(File file);
-
   File toEntity(FileRequestDto fileDto);
 
   void updateEntityFromDto(FileRequestDto fileDto, @MappingTarget File file);
