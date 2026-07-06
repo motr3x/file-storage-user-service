@@ -24,6 +24,7 @@ public class File {
   private UUID userId;
   private String userLogin;
   private String downloadUrl;
+  private byte[] file;
   private List<Comment> comments = new ArrayList<>();
   @JsonFormat(pattern = "yyyy-MM-dd")
   private LocalDate createdAt = LocalDate.now();

@@ -7,12 +7,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -27,6 +29,7 @@ import ru.answer_42.file_storage_service.exception.FileHasVirusException;
 import ru.answer_42.file_storage_service.exception.FileIsUnderScanException;
 import ru.answer_42.file_storage_service.exception.StorageException;
 import ru.answer_42.file_storage_service.exception.StorageFileNotFoundException;
+import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.service.AntivirusService;
 import ru.answer_42.file_storage_service.service.FileMetadataService;
@@ -62,20 +65,24 @@ public class StorageServiceImpl implements StorageService {
       if (file.isEmpty()) {
         throw new StorageException("Failed to store empty file.");
       }
+//      Path destinationFile = this.rootLocation.resolve(
+//              Paths.get(file.getOriginalFilename()))
+//          .normalize().toAbsolutePath();
+//      if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+//        throw new StorageException(
+//            "Cannot store file outside current directory.");
+//      }
       Path destinationFile = this.rootLocation.resolve(
               Paths.get(file.getOriginalFilename()))
-          .normalize().toAbsolutePath();
-      if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-        throw new StorageException(
-            "Cannot store file outside current directory.");
-      }
+          .normalize();
       if (file.getSize() > MAX_SIZE) {
         throw new FileSizeLimitExceededException("File is too large", file.getSize(), MAX_SIZE);
       }
-      try (InputStream inputStream = file.getInputStream()) {
-        Files.copy(inputStream, destinationFile,
-            StandardCopyOption.REPLACE_EXISTING);
-      }
+//      try (InputStream inputStream = file.getInputStream()) {
+//        Files.copy(inputStream, destinationFile,
+//            StandardCopyOption.REPLACE_EXISTING);
+//      }
+
       FileRequestDto fileEntity = fileService.multipartFileToFileRequestDto(file, destinationFile);
       UUID fileId = fileService.save(login, fileEntity);
       CompletableFuture.runAsync(() -> {
@@ -113,25 +120,41 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public Resource loadAsResource(String filename) {
-    try {
+  public byte[] loadAsResource(String filename) {
+
       Path file = load(filename);
-      Resource resource = new UrlResource(file.toUri());
-      if (resource.exists() || resource.isReadable()) {
-        FileResponseDto fileResponseDto = fileService.findByTitle(filename);
-        if (fileResponseDto.getStatus().equals(Status.IN_PROCESS)) {
+      File resultFile = fileService.findByPath(file);
+      if (!ArrayUtils.isEmpty(resultFile.getFile())) {
+        if (resultFile.getStatus().equals(Status.IN_PROCESS)) {
           throw new FileIsUnderScanException(
-              "File: " + fileResponseDto.getTitle() + " is under scan");
+              "File: " + resultFile.getTitle() + " is under scan");
         }
-        return resource;
+        return resultFile.getFile();
       } else {
         throw new StorageFileNotFoundException(
             "Could not read file: " + filename);
-
       }
-    } catch (MalformedURLException e) {
-      throw new StorageFileNotFoundException("Could not read file: " + filename, e);
-    }
+
+
+//    } catch (MalformedURLException e) {
+//      throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+//    }
+//      Resource resource = new UrlResource(file.toUri());
+//      if (resource.exists() || resource.isReadable()) {
+//        FileResponseDto fileResponseDto = fileService.findByTitle(filename);
+//        if (fileResponseDto.getStatus().equals(Status.IN_PROCESS)) {
+//          throw new FileIsUnderScanException(
+//              "File: " + fileResponseDto.getTitle() + " is under scan");
+//        }
+//        return resource;
+//      } else {
+//        throw new StorageFileNotFoundException(
+//            "Could not read file: " + filename);
+//
+//      }
+//    } catch (MalformedURLException e) {
+//      throw new StorageFileNotFoundException("Could not read file: " + filename, e);
+//    }
   }
 
   @Override

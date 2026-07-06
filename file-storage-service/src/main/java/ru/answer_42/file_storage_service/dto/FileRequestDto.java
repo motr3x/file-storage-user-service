@@ -13,4 +13,5 @@ public class FileRequestDto {
   private String userLogin;
   private Status status;
   private String downloadUrl;
+  private byte[] file;
 }

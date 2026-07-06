@@ -3,6 +3,7 @@ package ru.answer_42.file_storage_service.controller;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -32,14 +33,16 @@ public class StorageController {
 
   @GetMapping("/{filename:.+}")
   public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-    Resource file = storageService.loadAsResource(filename);
+    byte[] file = storageService.loadAsResource(filename);
 
     if (file == null) {
       return ResponseEntity.notFound().build();
     }
 
+    ByteArrayResource resource = new ByteArrayResource(file);
+
     return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-        "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+        "attachment; filename=\"" + filename + "\"").body(resource);
   }
 
   @GetMapping()

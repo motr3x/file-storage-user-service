@@ -1,5 +1,6 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
@@ -113,13 +114,24 @@ public class FileServiceImpl implements FileService {
 
   @Override
   public FileRequestDto multipartFileToFileRequestDto(MultipartFile file, Path destinationFile) {
-    FileRequestDto fileEntity = new FileRequestDto();
+    File fileEntity = new File();
     fileEntity.setTitle(file.getOriginalFilename());
     fileEntity.setSize(file.getSize());
     fileEntity.setType(determinateType(file));
     fileEntity.setDownloadUrl(destinationFile.toString());
     fileEntity.setStatus(Status.UPLOAD);
-    return fileEntity;
+    try {
+      fileEntity.setFile(file.getBytes());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return fileMapper.toFileRequestDto(fileEntity);
+  }
+
+  @Override
+  public File findByPath(Path file) {
+    return fileRepository.findByPath(file).
+        orElseThrow(() -> new ResourceNotFoundException("File not found with path: " + file));
   }
 
   private Type determinateType(MultipartFile file) {

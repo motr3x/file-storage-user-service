@@ -61,7 +61,7 @@ public class FileController {
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
 
-  @GetMapping("/{login}")
+  @GetMapping("/user/{login}")
   public ResponseEntity<List<FileResponseDto>> readAll(@PathVariable String login,
       @RequestParam(required = false) String name,
       @RequestParam(required = false) LocalDate start,

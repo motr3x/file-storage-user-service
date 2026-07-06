@@ -1,5 +1,6 @@
 package ru.answer_42.file_storage_service.repository;
 
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.kafka.common.quota.ClientQuotaAlteration.Op;
 import org.springframework.stereotype.Repository;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.model.File;
@@ -51,6 +53,15 @@ public class InMemoryFileRepository {
       }
     }
     return files;
+  }
+
+  public Optional<File> findByPath(Path path){
+    for (Map.Entry<UUID, File> entry : database.entrySet()) {
+      if(entry.getValue().getDownloadUrl().equals(path.toString())){
+        return Optional.of(entry.getValue());
+      }
+    }
+    return Optional.empty();
   }
 
   public Optional<File> findById(UUID id) {

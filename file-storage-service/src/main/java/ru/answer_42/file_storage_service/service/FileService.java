@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
 
@@ -32,4 +33,6 @@ public interface FileService {
   FileResponseDto findByTitle(String name);
 
   FileRequestDto multipartFileToFileRequestDto(MultipartFile file, Path path);
+
+  File findByPath(Path file);
 }

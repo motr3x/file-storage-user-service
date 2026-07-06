@@ -19,7 +19,7 @@ import ru.answer_42.file_storage_service.model.File;
 )
 @Component
 public interface FileMapper {
-  FileRequestDto toFileRequestDto(FileResponseDto fileResponseDto);
+  FileRequestDto toFileRequestDto(File file);
 
   FileResponseDto toFileResponseDto(File file);
 
