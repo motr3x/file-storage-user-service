@@ -5,9 +5,12 @@ spring:
     consumer:
       group-id: "default"
 
-
 server:
   port: 8081
 
 topic:
   name: t.file.order
+
+api:
+  server:
+    url: http://localhost:8081
