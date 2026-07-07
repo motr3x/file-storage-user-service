@@ -38,7 +38,7 @@ public class FileController {
   //TODO
   // После валидации дтошки дописать документацию по исключениям связанных с валидацией
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Метаданные файла успешно сохранён"),
+      @ApiResponse(responseCode = "201", description = "Метаданные файла успешно сохранён"),
       @ApiResponse(responseCode = "404", description = "Пользователь с таким логином не найден")
   })
   @Operation(summary = "Создать объект с метаданными переданного файла", description = "В ответе возвращается созданные метаданными файла")
@@ -53,7 +53,7 @@ public class FileController {
           required = true)
       @RequestBody FileRequestDto fileRequestDto) {
     UUID fileId = fileService.save(login, fileRequestDto);
-    return new ResponseEntity<>(fileService.findById(fileId), HttpStatus.OK);
+    return new ResponseEntity<>(fileService.findById(fileId), HttpStatus.CREATED);
   }
 
   @ApiResponses({

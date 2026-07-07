@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +31,7 @@ public class StorageController {
   private final StorageService storageService;
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Файл успешно сохранён в хранилище"),
+      @ApiResponse(responseCode = "201", description = "Файл успешно сохранён в хранилище"),
       @ApiResponse(responseCode = "400", description = "Указанный тип файла не поддерживается"),
       @ApiResponse(responseCode = "400", description = "Файл пустой"),
       @ApiResponse(responseCode = "409", description = "Файл имеет вирус"),
@@ -46,7 +47,7 @@ public class StorageController {
           description = "Файл, который сохраняется в хранилище",
           required = true) @RequestParam("file") MultipartFile file) {
     FileResponseDto fileResponseDto = storageService.store(login, file);
-    return ResponseEntity.ok(fileResponseDto);
+    return new ResponseEntity<>(fileResponseDto, HttpStatus.CREATED);
   }
 
   @ApiResponses({
@@ -64,7 +65,7 @@ public class StorageController {
     byte[] file = storageService.loadAsResource(login, filename);
 
     if (file == null) {
-      return ResponseEntity.notFound().build();
+      return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     ByteArrayResource resource = new ByteArrayResource(file);
