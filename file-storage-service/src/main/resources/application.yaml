@@ -6,3 +6,7 @@ server:
 
 topic:
   name: t.file.order
+
+api:
+  server:
+    url: http://localhost:8080
