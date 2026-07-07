@@ -30,65 +30,86 @@ import ru.answer_42.file_storage_service.service.FileService;
 @RequiredArgsConstructor
 public class FileController {
 
+  //404 - если объект с id не найден
+  //400 - неправильные данные
+
   private final FileService fileService;
 
+  //TODO
+  // После валидации дтошки дописать документацию по исключениям связанных с валидацией
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Сотрудник успешно сохранён"),
+      @ApiResponse(responseCode = "200", description = "Метаданные файла успешно сохранён"),
+      @ApiResponse(responseCode = "404", description = "Пользователь с таким логином не найден")
   })
   @Operation(summary = "Создать объект с метаданными переданного файла", description = "В ответе возвращается созданные метаданными файла")
   @PostMapping("/{login}")
-  public ResponseEntity<FileResponseDto> create(@Parameter(
+  public ResponseEntity<FileResponseDto> create(
+      @Parameter(
           description = "Логин пользователя, метаданными о файле по которому сохраняются",
-          required = true) @PathVariable String login, @Parameter(
-      description = "Метаданными о файле, который сохраняют",
-      required = true)
+          required = true)
+      @PathVariable String login,
+      @Parameter(
+          description = "Метаданными о файле, который сохраняют",
+          required = true)
       @RequestBody FileRequestDto fileRequestDto) {
     UUID fileId = fileService.save(login, fileRequestDto);
     return new ResponseEntity<>(fileService.findById(fileId), HttpStatus.OK);
   }
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Сотрудник успешно получен"),
+      @ApiResponse(responseCode = "200", description = "Метаданные файла успешно получены"),
+      @ApiResponse(responseCode = "404", description = "Метаданные файла не найдены")
   })
   @Operation(summary = "Получить метаданные файла по id", description = "В ответе возвращается желаемые метаданные файла")
   @Tag(name = "get", description = "GET-методы file API")
   @GetMapping("/{id}")
-  public ResponseEntity<FileResponseDto> readById(@Parameter(
-      description = "ID файла, метаданные по которому запрашиваются",
-      required = true) @PathVariable UUID id) {
+  public ResponseEntity<FileResponseDto> readById(
+      @Parameter(
+          description = "ID метаданных файла, по которым идет запрос",
+          required = true)
+      @PathVariable UUID id) {
     FileResponseDto fileResponseDto = fileService.findById(id);
     return ResponseEntity.ok(fileResponseDto);
   }
 
+  //TODO
+  // После валидации дтошки дописать документацию по исключениям связанных с валидацией
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Сотрудник успешно обновлён"),
+      @ApiResponse(responseCode = "200", description = "Метаданные файла успешно обновлёны"),
+      @ApiResponse(responseCode = "404", description = "Метаданные файла не найдены")
   })
   @Operation(summary = "Обновить метаданные файла с определенным id", description = "В ответе возвращается обновленные метаданные файла")
   @PutMapping("/{id}")
-  public ResponseEntity<FileResponseDto> update(@Parameter(
+  public ResponseEntity<FileResponseDto> update(
+      @Parameter(
           description = "ID метаданных файла, данные которого обновляются",
-          required = true) @PathVariable UUID id, @Parameter(
-      description = "Файл с полями, которые стоит обновить у заданного файла",
-      required = true)
+          required = true)
+      @PathVariable UUID id,
+      @Parameter(
+          description = "Файл с полями, которые стоит обновить у заданного файла",
+          required = true)
       @RequestBody FileRequestDto fileRequestDto) {
     FileResponseDto fileResponseDto = fileService.update(id, fileRequestDto);
     return ResponseEntity.ok(fileResponseDto);
   }
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Сотрудник успешно удалён"),
+      @ApiResponse(responseCode = "200", description = "Метаданные файла успешно удалёны"),
+      @ApiResponse(responseCode = "404", description = "Метаданные файла не найдены")
   })
   @Operation(summary = "Удалить метаданные о файле по id", description = "В ответе возвращается метаданные о файле, которые были удалены")
   @DeleteMapping("/{id}")
-  public ResponseEntity<FileResponseDto> delete(@Parameter(
-      description = "ID метаданных файла, который удаляется",
-      required = true) @PathVariable UUID id) {
+  public ResponseEntity<FileResponseDto> delete(
+      @Parameter(
+          description = "ID метаданных файла, который удаляется",
+          required = true)
+      @PathVariable UUID id) {
     FileResponseDto fileResponseDto = fileService.deleteById(id);
     return ResponseEntity.ok(fileResponseDto);
   }
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Список имен успешно получен"),
+      @ApiResponse(responseCode = "200", description = "Список имен файлов успешно получен"),
       @ApiResponse(responseCode = "404", description = "В хранилище нет файлов")
   })
   @Operation(summary = "Получить названия всех файлов", description = "В ответе возвращается список названий файлов")
@@ -101,30 +122,35 @@ public class FileController {
   }
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Список информации о файлах успешно получен"),
+      @ApiResponse(responseCode = "200", description = "Список методанных о файлах успешно получен"),
       @ApiResponse(responseCode = "404", description = "В хранилище нет подходящих файлов")
   })
   @Operation(summary = "Получить метаданные о файлах с возможностью фильтрации", description = "В ответе возвращается список метаданными о файлах, прошедших фильтр ")
   @Tag(name = "get", description = "GET-методы file API")
   @GetMapping("/user/{login}")
-  public ResponseEntity<List<FileResponseDto>> readAll(@Parameter(
+  public ResponseEntity<List<FileResponseDto>> readAll(
+      @Parameter(
           description = "Логин пользователя, данные о файле по которому запрашиваются",
-          required = true) @PathVariable String login,
+          required = true)
+      @PathVariable String login,
       @Parameter(
           description = "Фильтр по имени(возможно частичное вхождение)",
-          required = false) @RequestParam(required = false) String name,
+          required = false)
+      @RequestParam(required = false) String name,
       @Parameter(
           description = "Фильтр по дате изменения(диапазон от)",
-          required = false) @RequestParam(required = false) LocalDate start,
+          required = false)
+      @RequestParam(required = false) LocalDate start,
       @Parameter(
           description = "Фильтр по дате изменения(диапазон до)",
-          required = false) @RequestParam(required = false) LocalDate end,
+          required = false)
+      @RequestParam(required = false) LocalDate end,
       @Parameter(
           description = "Фильтр по типу (без указания - все, при указании - список переданных типов)",
-          required = false) @RequestParam(required = false) Type type) {
+          required = false)
+      @RequestParam(required = false) Type type) {
     final List<FileResponseDto> files = fileService.findAll(login, name, start, end, type);
     return files != null ? new ResponseEntity<>(files, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
-
 }

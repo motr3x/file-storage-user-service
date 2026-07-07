@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
-import ru.answer_42.file_storage_service.exception.UnsupportedFileTypeException;
+import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;

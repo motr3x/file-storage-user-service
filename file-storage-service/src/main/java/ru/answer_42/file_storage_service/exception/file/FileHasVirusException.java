@@ -1,4 +1,4 @@
-package ru.answer_42.file_storage_service.exception;
+package ru.answer_42.file_storage_service.exception.file;
 
 public class FileHasVirusException extends RuntimeException {
 

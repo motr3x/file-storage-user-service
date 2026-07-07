@@ -1,25 +1,13 @@
 package ru.answer_42.file_storage_service.service.impl;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -30,18 +18,21 @@ import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededExceptio
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.config.StorageProperties;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
-import ru.answer_42.file_storage_service.exception.FileHasVirusException;
-import ru.answer_42.file_storage_service.exception.FileIsUnderScanException;
+import ru.answer_42.file_storage_service.exception.AccessDeniedException;
+import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
+import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
+import ru.answer_42.file_storage_service.exception.file.FileIsUnderScanException;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
-import ru.answer_42.file_storage_service.exception.StorageException;
-import ru.answer_42.file_storage_service.exception.StorageFileNotFoundException;
+import ru.answer_42.file_storage_service.exception.storage.StorageInitFailedException;
+import ru.answer_42.file_storage_service.exception.storage.StorageLocationEmptyException;
+import ru.answer_42.file_storage_service.exception.storage.StorageReadFailedException;
+import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedException;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.service.AntivirusService;
@@ -65,7 +56,7 @@ public class StorageServiceImpl implements StorageService {
     this.antivirusService = antivirusService;
     this.fileMetadataService = fileMetadataService;
     if (properties.getLocation().trim().isEmpty()) {
-      throw new StorageException("File upload location can not be Empty.");
+      throw new StorageLocationEmptyException("File upload location can not be Empty.");
     }
     this.rootLocation = Paths.get(properties.getLocation());
   }
@@ -76,7 +67,7 @@ public class StorageServiceImpl implements StorageService {
     Executor executor = Executors.newFixedThreadPool(10);
     try {
       if (file.isEmpty()) {
-        throw new StorageException("Failed to store empty file.");
+        throw new FileIsEmptyException("Failed to store empty file.");
       }
 //      Path destinationFile = this.rootLocation.resolve(
 //              Paths.get(file.getOriginalFilename()))
@@ -110,12 +101,19 @@ public class StorageServiceImpl implements StorageService {
       fileMetadataService.createFileOrder(fileResponseDto);
       return fileResponseDto;
     } catch (IOException e) {
-      throw new StorageException("Failed to store file.", e);
+      throw new StorageStoreFailedException("Failed to store file.");
     }
   }
 
+  public boolean accessCheck(String login, FileResponseDto responseDto){
+    if(!(responseDto.getUserLogin().equals(login))){
+      throw new AccessDeniedException("User with login: " + login + " hasn't access to file: "  + responseDto.getTitle());
+    }
+    return true;
+  }
   @Override
-  public Resource loadAll(String userLogin, List<UUID> fileNames) {
+  public Resource loadAll(String login, List<UUID> fileNames) {
+//    fileNames = fileNames.stream().filter(id -> accessCheck(login, fileService.findById(id))).toList();
     Executor executor = Executors.newFixedThreadPool(10);
     List<CompletableFuture<FileResponseDto>> futures = fileNames.stream()
         .map(id -> CompletableFuture.supplyAsync(() -> fileService.findById(id),executor)).toList();
@@ -147,7 +145,7 @@ public class StorageServiceImpl implements StorageService {
           .filter(path -> !path.equals(this.rootLocation))
           .map(this.rootLocation::relativize).map(Path::getFileName).toList();
     } catch (IOException e) {
-      throw new StorageException("Failed to read stored files", e);
+      throw new StorageReadFailedException("Failed to read stored files");
     }
 
   }
@@ -173,7 +171,7 @@ public class StorageServiceImpl implements StorageService {
         }
         return resultFile.getFile();
       } else {
-        throw new StorageFileNotFoundException(
+        throw new ResourceNotFoundException(
             "Could not read file: " + filename);
       }
 
@@ -209,7 +207,7 @@ public class StorageServiceImpl implements StorageService {
     try {
       Files.createDirectories(rootLocation);
     } catch (IOException e) {
-      throw new StorageException("Could not initialize storage", e);
+      throw new StorageInitFailedException("Could not initialize storage");
     }
   }
 }

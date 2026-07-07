@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +31,11 @@ public class StorageController {
 
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Файл успешно сохранён в хранилище"),
+      @ApiResponse(responseCode = "400", description = "Указанный тип файла не поддерживается"),
+      @ApiResponse(responseCode = "400", description = "Файл пустой"),
+      @ApiResponse(responseCode = "409", description = "Файл имеет вирус"),
+      @ApiResponse(responseCode = "413", description = "Файл слишком большой"),
+      @ApiResponse(responseCode = "500", description = "Файл не сохранён в хранилище")
   })
   @Operation(summary = "Сохранить файл в хранилище", description = "В ответе возвращается метаданные сохраненного файла")
   @PostMapping("/{login}/upload")
@@ -47,7 +51,8 @@ public class StorageController {
 
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Файл успешно получен"),
-      @ApiResponse(responseCode = "404", description = "В хранилище нет подходящего файла")
+      @ApiResponse(responseCode = "404", description = "В хранилище нет подходящего файла"),
+      @ApiResponse(responseCode = "409", description = "Файл находится под сканированием")
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
   @GetMapping("/{login}/{filename:.+}")
@@ -70,6 +75,7 @@ public class StorageController {
 
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Архив успешно получен"),
+      @ApiResponse(responseCode = "403", description = "У пользователя нед доступа к файлам"),
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
   @PostMapping("/{login}")
@@ -78,7 +84,7 @@ public class StorageController {
           required = true) @PathVariable String login,
       @Parameter(
           description = "Список с id файлов, которые пользователь желает сохранить",
-          required = true)@RequestBody List<UUID> filesId) {
+          required = true) @RequestBody List<UUID> filesId) {
 
     Resource resource = storageService.loadAll(login, filesId);
 
