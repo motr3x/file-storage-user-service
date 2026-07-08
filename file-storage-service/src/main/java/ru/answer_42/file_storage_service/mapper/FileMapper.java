@@ -5,8 +5,8 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.stereotype.Component;
-import ru.answer_42.file_storage_service.dto.FileRequestDto;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 
 @Mapper(
@@ -19,11 +19,18 @@ import ru.answer_42.file_storage_service.model.File;
 )
 @Component
 public interface FileMapper {
-  FileRequestDto toFileRequestDto(File file);
 
-  FileResponseDto toFileResponseDto(File file);
+  FileMetadataRequestDto toFileRequestDto(File file);
 
-  File toEntity(FileRequestDto fileDto);
+  FileMetadataResponseDto toFileResponseDto(File file);
 
-  void updateEntityFromDto(FileRequestDto fileDto, @MappingTarget File file);
+  FileMetadataResponseDto toFileResponseDtoFromFileRequestDto(
+      FileMetadataRequestDto fileMetadataRequestDto);
+
+  FileMetadataRequestDto toFileRequestDtoFromFileResponseDto(
+      FileMetadataResponseDto fileMetadataResponseDto);
+
+  File toEntity(FileMetadataRequestDto fileDto);
+
+  void updateEntityFromDto(FileMetadataRequestDto fileDto, @MappingTarget File file);
 }

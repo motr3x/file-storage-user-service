@@ -8,8 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @ConfigurationPropertiesScan
 public class FileStorageServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FileStorageServiceApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(FileStorageServiceApplication.class, args);
+  }
 
 }

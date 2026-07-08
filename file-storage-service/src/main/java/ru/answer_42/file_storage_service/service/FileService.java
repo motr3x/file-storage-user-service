@@ -6,33 +6,33 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileRequestDto;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
 
 public interface FileService {
 
-  UUID save(String login, FileRequestDto file);
+  UUID save(String login, FileMetadataRequestDto file);
 
-  FileResponseDto update(UUID id, FileRequestDto fileDto);
+  FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileDto);
 
   void updateStatus(UUID id, Status status);
 
-  FileResponseDto update(FileRequestDto fileDto);
-
-  FileResponseDto deleteById(UUID id);
+  FileMetadataResponseDto deleteById(UUID id);
 
   List<String> findAllTitles();
 
-  List<FileResponseDto> findAll(String login, String name, LocalDate start, LocalDate end, Type type);
+  List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start, LocalDate end,
+      Type type);
 
-  FileResponseDto findById(UUID id);
+  FileMetadataResponseDto findById(UUID id);
 
-  FileResponseDto findByTitle(String name);
+  FileMetadataResponseDto findByTitle(String name);
 
-  FileRequestDto multipartFileToFileRequestDto(MultipartFile file, Path path);
+  FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
+      Path path);
 
   File findByPath(Path file);
 }

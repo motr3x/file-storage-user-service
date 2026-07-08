@@ -1,5 +1,7 @@
 package ru.answer_42.file_storage_service.exception;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,12 @@ import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedExc
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+//  @ExceptionHandler(Exception.class)
+//  public ResponseEntity<Response> handleException(Exception e) {
+//    Response response = new Response(e.getMessage());
+//    return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+//  }
 
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<Response> handleException(ResourceNotFoundException e) {

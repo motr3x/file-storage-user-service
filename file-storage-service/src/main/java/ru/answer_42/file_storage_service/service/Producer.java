@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -25,8 +25,9 @@ public class Producer {
     this.objectMapper = objectMapper;
   }
 
-  public String sendMessage(FileResponseDto fileResponseDto) throws JsonProcessingException {
-    String orderAsMessage = objectMapper.writeValueAsString(fileResponseDto);
+  public String sendMessage(FileMetadataRequestDto fileMetadataRequestDto)
+      throws JsonProcessingException {
+    String orderAsMessage = objectMapper.writeValueAsString(fileMetadataRequestDto);
     kafkaTemplate.send(orderTopic, orderAsMessage);
 
     log.info("food order produced {}", orderAsMessage);

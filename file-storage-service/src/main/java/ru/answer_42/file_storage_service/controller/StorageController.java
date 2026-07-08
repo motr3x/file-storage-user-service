@@ -2,11 +2,14 @@ package ru.answer_42.file_storage_service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -20,7 +23,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.exception.AccessDeniedException;
+import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
+import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
+import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
+import ru.answer_42.file_storage_service.exception.file.FileIsUnderScanException;
+import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
+import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedException;
 import ru.answer_42.file_storage_service.service.StorageService;
 
 @RestController
@@ -31,29 +41,49 @@ public class StorageController {
   private final StorageService storageService;
 
   @ApiResponses({
-      @ApiResponse(responseCode = "201", description = "Файл успешно сохранён в хранилище"),
-      @ApiResponse(responseCode = "400", description = "Указанный тип файла не поддерживается"),
-      @ApiResponse(responseCode = "400", description = "Файл пустой"),
-      @ApiResponse(responseCode = "409", description = "Файл имеет вирус"),
-      @ApiResponse(responseCode = "413", description = "Файл слишком большой"),
-      @ApiResponse(responseCode = "500", description = "Файл не сохранён в хранилище")
+      @ApiResponse(responseCode = "201", description = "Файл успешно сохранён в хранилище",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileMetadataResponseDto.class))}),
+      @ApiResponse(responseCode = "400", description = "Указанный тип файла не поддерживается",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = UnsupportedFileTypeException.class))}),
+      @ApiResponse(responseCode = "400", description = "Файл пустой",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileIsEmptyException.class))}),
+      @ApiResponse(responseCode = "409", description = "Файл имеет вирус",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileHasVirusException.class))}),
+      @ApiResponse(responseCode = "413", description = "Файл слишком большой",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileSizeLimitExceededException.class))}),
+      @ApiResponse(responseCode = "500", description = "Файл не сохранён в хранилище",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = StorageStoreFailedException.class))})
   })
-  @Operation(summary = "Сохранить файл в хранилище", description = "В ответе возвращается метаданные сохраненного файла")
+  @Operation(
+      summary = "Сохранить файл в хранилище",
+      description = "В ответе возвращается метаданные сохраненного файла")
   @PostMapping("/{login}/upload")
-  public ResponseEntity<FileResponseDto> handleFileUpload(@Parameter(
+  public ResponseEntity<FileMetadataResponseDto> handleFileUpload(@Parameter(
           description = "Логин пользователя, который сохраняет файл в хранилище",
           required = true) @PathVariable String login,
       @Parameter(
           description = "Файл, который сохраняется в хранилище",
           required = true) @RequestParam("file") MultipartFile file) {
-    FileResponseDto fileResponseDto = storageService.store(login, file);
-    return new ResponseEntity<>(fileResponseDto, HttpStatus.CREATED);
+    FileMetadataResponseDto fileMetadataResponseDto = storageService.store(login, file);
+    return new ResponseEntity<>(fileMetadataResponseDto, HttpStatus.CREATED);
   }
 
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Файл успешно получен"),
-      @ApiResponse(responseCode = "404", description = "В хранилище нет подходящего файла"),
-      @ApiResponse(responseCode = "409", description = "Файл находится под сканированием")
+      @ApiResponse(responseCode = "200", description = "Файл успешно получен",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = Resource.class))}),
+      @ApiResponse(responseCode = "404", description = "В хранилище нет подходящего файла",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = ResourceNotFoundException.class))}),
+      @ApiResponse(responseCode = "409", description = "Файл находится под сканированием",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileIsUnderScanException.class))})
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
   @GetMapping("/{login}/{filename:.+}")
@@ -74,9 +104,14 @@ public class StorageController {
         "attachment; filename=\"" + filename + "\"").body(resource);
   }
 
+  //TODO насчёт доступа стоит подумать, стоит ли говорить об этом пользователю
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "Архив успешно получен"),
-      @ApiResponse(responseCode = "403", description = "У пользователя нед доступа к файлам"),
+      @ApiResponse(responseCode = "200", description = "Архив успешно получен",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = Resource.class))}),
+      @ApiResponse(responseCode = "403", description = "У пользователя нед доступа к файлам",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = AccessDeniedException.class))}),
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
   @PostMapping("/{login}")

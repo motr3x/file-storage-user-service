@@ -1,15 +1,14 @@
 package ru.answer_42.file_storage_service.config;
 
-import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-
-import java.util.List;
 
 @Configuration
 @AllArgsConstructor
@@ -18,7 +17,7 @@ public class OpenAPIConfiguration {
   private Environment environment;
 
   @Bean
-  public OpenAPI defineOpenAPI () {
+  public OpenAPI defineOpenAPI() {
     Server server = new Server();
     String serverUrl = environment.getProperty("api.server.url");
     server.setUrl(serverUrl);

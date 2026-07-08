@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.apache.kafka.common.quota.ClientQuotaAlteration.Op;
 import org.springframework.stereotype.Repository;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.model.File;
@@ -34,9 +33,9 @@ public class InMemoryFileRepository {
     return titles;
   }
 
-  public Optional<UUID> findUserIdByLogin(String login){
+  public Optional<UUID> findUserIdByLogin(String login) {
     for (Map.Entry<UUID, File> entry : database.entrySet()) {
-      if(entry.getValue().getUserLogin().equals(login)){
+      if (entry.getValue().getUserLogin().equals(login)) {
         return Optional.of(entry.getValue().getUserId());
       }
     }
@@ -45,19 +44,20 @@ public class InMemoryFileRepository {
 
   public List<File> findAll(String login) {
     UUID id = findUserIdByLogin(login)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found with login: " + login));;
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with login: " + login));
+    ;
     List<File> files = new ArrayList<>();
     for (Map.Entry<UUID, File> entry : database.entrySet()) {
-      if(entry.getValue().getUserId().equals(id)){
-      files.add(entry.getValue());
+      if (entry.getValue().getUserId().equals(id)) {
+        files.add(entry.getValue());
       }
     }
     return files;
   }
 
-  public Optional<File> findByPath(Path path){
+  public Optional<File> findByPath(Path path) {
     for (Map.Entry<UUID, File> entry : database.entrySet()) {
-      if(entry.getValue().getDownloadUrl().equals(path.toString())){
+      if (entry.getValue().getDownloadUrl().equals(path.toString())) {
         return Optional.of(entry.getValue());
       }
     }
@@ -78,9 +78,9 @@ public class InMemoryFileRepository {
     return file;
   }
 
-  public Optional<File> findByTitle(String name){
+  public Optional<File> findByTitle(String name) {
     for (Map.Entry<UUID, File> entry : database.entrySet()) {
-      if(entry.getValue().getTitle().equals(name)){
+      if (entry.getValue().getTitle().equals(name)) {
         return Optional.of(entry.getValue());
       }
     }

@@ -9,9 +9,11 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileRequestDto;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto.FileMetadataResponseDtoBuilder;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
+import ru.answer_42.file_storage_service.exception.file.UnsupportedFileContent;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
@@ -28,61 +30,51 @@ public class FileServiceImpl implements FileService {
   private final FileMapper fileMapper;
 
   @Override
-  public UUID save(String login, FileRequestDto fileRequestDto) {
-    File file = fileMapper.toEntity(fileRequestDto);
+  public UUID save(String login, FileMetadataRequestDto fileMetadataRequestDto) {
+    File file = fileMapper.toEntity(fileMetadataRequestDto);
+    file.setCreatedAt(LocalDate.now());
     UUID savedFileId = fileRepository.save(login, UUID.randomUUID(), file);
     return savedFileId;
   }
 
-  public void updateStatus(UUID id, Status status){
+  public void updateStatus(UUID id, Status status) {
     File file = fileRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
     file.setStatus(status);
     fileRepository.update(file);
   }
 
-  public List<FileResponseDto> findAll(String login, String name, LocalDate start, LocalDate end, Type type){
+  public List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start,
+      LocalDate end, Type type) {
     Stream<File> files = fileRepository.findAll(login).stream();
-    if(name != null) {
+    if (name != null) {
       files = files.filter(file -> file.getTitle().contains(name));
     }
-    if(start != null){
+    if (start != null) {
       files = files.filter(file -> file.getCreatedAt().isAfter(start));
     }
-    if(end != null){
+    if (end != null) {
       files = files.filter(file -> file.getCreatedAt().isBefore(end));
     }
-    if(type != null) {
+    if (type != null) {
       files = files.filter(file -> file.getType().equals(type));
     }
-    List<FileResponseDto> fileResponseDtos = files.map(fileMapper::toFileResponseDto).toList();
-    return fileResponseDtos;
+    List<FileMetadataResponseDto> fileMetadataResponseDtos = files.map(
+        fileMapper::toFileResponseDto).toList();
+    return fileMetadataResponseDtos;
   }
 
   @Override
-  public FileResponseDto update(UUID id, FileRequestDto fileRequestDto) {
+  public FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileMetadataRequestDto) {
 
     File existingFile = fileRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
 
-    fileMapper.updateEntityFromDto(fileRequestDto, existingFile);
+    fileMapper.updateEntityFromDto(fileMetadataRequestDto, existingFile);
 
     File updateFile = fileRepository.update(existingFile);
 
     return fileMapper.toFileResponseDto(updateFile);
-  }
-
-  @Override
-  public FileResponseDto update(FileRequestDto fileRequestDto) {
-    String title = fileRequestDto.getTitle();
-    File existingFile = fileRepository.findByTitle(title)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + title));
-    fileMapper.updateEntityFromDto(fileRequestDto, existingFile);
-
-    File updateFile = fileRepository.update(existingFile);
-
-    return fileMapper.toFileResponseDto(updateFile);
-
   }
 
   @Override
@@ -91,14 +83,14 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public FileResponseDto findById(UUID id) {
+  public FileMetadataResponseDto findById(UUID id) {
     File file = fileRepository.findById(id).
         orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
     return fileMapper.toFileResponseDto(file);
   }
 
   @Override
-  public FileResponseDto findByTitle(String name) {
+  public FileMetadataResponseDto findByTitle(String name) {
     File file = fileRepository.findByTitle(name).
         orElseThrow(() -> new ResourceNotFoundException("File not found with name: " + name));
     return fileMapper.toFileResponseDto(file);
@@ -106,26 +98,49 @@ public class FileServiceImpl implements FileService {
 
 
   @Override
-  public FileResponseDto deleteById(UUID id) {
+  public FileMetadataResponseDto deleteById(UUID id) {
     fileRepository.findById(id).
         orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
     return fileMapper.toFileResponseDto(fileRepository.deleteById(id));
   }
 
   @Override
-  public FileRequestDto multipartFileToFileRequestDto(MultipartFile file, Path destinationFile) {
-    File fileEntity = new File();
-    fileEntity.setTitle(file.getOriginalFilename());
-    fileEntity.setSize(file.getSize());
-    fileEntity.setType(determinateType(file));
-    fileEntity.setDownloadUrl(destinationFile.toString());
-    fileEntity.setStatus(Status.UPLOAD);
+  public FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
+      Path destinationFile) {
+//    FileRequestDtoBuilder fileRequestDtoBuilder = FileRequestDto.builder()
+//        .file()
+//    FileBuilder fileEntity = File.builder()
+//        .userLogin(login)
+//        .title(file.getOriginalFilename())
+//        .size(file.getSize())
+//        .type(determinateType(file))
+//        .downloadUrl(destinationFile.toString())
+//        .status(Status.UPLOAD)
+//        .createdAt(LocalDate.now())
+//        .updateDate(LocalDate.now());
+//    try {
+//      fileEntity.file(file.getBytes());
+//    } catch (IOException e){
+//      throw new UnsupportedFileContent("File: " + file.getOriginalFilename() + " has unsupported content");
+//    }
+    FileMetadataResponseDtoBuilder fileMetadataBuilder = FileMetadataResponseDto.builder();
     try {
-      fileEntity.setFile(file.getBytes());
+      fileMetadataBuilder.file(file.getBytes());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new UnsupportedFileContent(
+          "File: " + file.getOriginalFilename() + " has unsupported content");
     }
-    return fileMapper.toFileRequestDto(fileEntity);
+    fileMetadataBuilder
+        .size(file.getSize())
+        .downloadUrl(destinationFile.toString())
+        .type(determinateType(file))
+        .title(file.getOriginalFilename())
+        .status(Status.UPLOAD)
+        .userLogin(login)
+        .createdAt(LocalDate.now())
+        .updateDate(LocalDate.now());
+
+    return fileMetadataBuilder.build();
   }
 
   @Override
