@@ -14,13 +14,13 @@ spring:
 
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 server:
-  port: 8080
+  port: ${SERVICE_PORT}
 
 topic:
   name: t.file.order
 
 api:
   server:
-    url: http://localhost:8080
+    url: http://${SERVICE_HOST}:${SERVICE_PORT}
 storage:
-  location: http://localhost:8080/api/storage
+  location: http://${SERVICE_HOST}:${SERVICE_PORT}/api/storage
