@@ -11,10 +11,11 @@ import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
+import ru.answer_42.file_storage_service.repository.FileRepository;
 
 public interface FileService {
 
-  UUID save(String login, FileMetadataRequestDto file);
+  FileMetadataResponseDto save(String login, FileMetadataRequestDto file);
 
   FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileDto);
 
@@ -22,17 +23,19 @@ public interface FileService {
 
   FileMetadataResponseDto deleteById(UUID id);
 
-  List<String> findAllTitles();
+  List<String> findAllTitles(String login);
 
   List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start, LocalDate end,
       Type type);
-
-  FileMetadataResponseDto findById(UUID id);
 
   FileMetadataResponseDto findByTitle(String name);
 
   FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
       Path path);
 
+  FileMetadataResponseDto findByUserLoginAndId(String login, UUID id);
+
   File findByPath(Path file);
+
+  UUID getFileIdByLoginAndTitle(String login, String title);
 }

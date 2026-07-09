@@ -92,8 +92,8 @@ public class StorageServiceImpl implements StorageService {
 
       FileMetadataResponseDto fileEntity = fileService.multipartFileToFileResponseDto(login, file,
           destinationFile);
-      UUID fileId = fileService.save(login,
-          fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
+      FileMetadataResponseDto fileMetadataResponseDto = fileService.save(login, fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
+      UUID fileId = fileService.getFileIdByLoginAndTitle(login, fileMetadataResponseDto.getTitle());
       CompletableFuture future = CompletableFuture.runAsync(() -> {
         fileService.updateStatus(fileId, Status.IN_PROCESS);
         if (!antivirusService.scan(file)) {
@@ -129,7 +129,7 @@ public class StorageServiceImpl implements StorageService {
 //    fileNames = fileNames.stream().filter(id -> accessCheck(login, fileService.findById(id))).toList();
     Executor executor = Executors.newFixedThreadPool(10);
     List<CompletableFuture<FileMetadataResponseDto>> futures = fileNames.stream()
-        .map(id -> CompletableFuture.supplyAsync(() -> fileService.findById(id), executor))
+        .map(id -> CompletableFuture.supplyAsync(() -> fileService.findByUserLoginAndId(login, id), executor))
         .toList();
     List<FileMetadataResponseDto> desiredFiles = futures.stream().map(CompletableFuture::join)
         .toList();

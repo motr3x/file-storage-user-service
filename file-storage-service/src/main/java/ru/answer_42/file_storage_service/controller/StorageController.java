@@ -37,7 +37,6 @@ import ru.answer_42.file_storage_service.service.StorageService;
 @RequestMapping("/api/storage")
 @RequiredArgsConstructor
 public class StorageController {
-
   private final StorageService storageService;
 
   @ApiResponses({

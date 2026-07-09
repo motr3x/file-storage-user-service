@@ -6,6 +6,15 @@ networks:
     driver: bridge
 
 services:
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: file_storage_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DOCKER_PSQL_SERVICE_HOST}:5432"
+
   zookeeper:
     image: zookeeper:3.7.0
     container_name: zookeeper

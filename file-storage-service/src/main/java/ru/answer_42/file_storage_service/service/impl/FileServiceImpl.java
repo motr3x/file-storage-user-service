@@ -19,34 +19,40 @@ import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
-import ru.answer_42.file_storage_service.repository.InMemoryFileRepository;
+import ru.answer_42.file_storage_service.model.User;
+import ru.answer_42.file_storage_service.repository.FileRepository;
+import ru.answer_42.file_storage_service.repository.UserRepository;
 import ru.answer_42.file_storage_service.service.FileService;
 
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
 
-  private final InMemoryFileRepository fileRepository;
+  private final FileRepository fileRepository;
+  private final UserRepository userRepository;
   private final FileMapper fileMapper;
 
   @Override
-  public UUID save(String login, FileMetadataRequestDto fileMetadataRequestDto) {
+  public FileMetadataResponseDto save(String login, FileMetadataRequestDto fileMetadataRequestDto) {
+    User user = userRepository.findByLogin(login)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
     File file = fileMapper.toEntity(fileMetadataRequestDto);
     file.setCreatedAt(LocalDate.now());
-    UUID savedFileId = fileRepository.save(login, UUID.randomUUID(), file);
-    return savedFileId;
+    file.setUserLogin(login);
+    fileRepository.save(file);
+    return fileMapper.toFileResponseDto(fileRepository.save(file));
   }
 
-  public void updateStatus(UUID id, Status status) {
-    File file = fileRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+  public void updateStatus(String login, String title, Status status) {
+    File file = fileRepository.findByUserLoginAndTitle(login, title)
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with login: " + login));
     file.setStatus(status);
-    fileRepository.update(file);
+    fileRepository.save(file);
   }
 
   public List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start,
       LocalDate end, Type type) {
-    Stream<File> files = fileRepository.findAll(login).stream();
+    Stream<File> files = fileRepository.findAllByUserLogin(login).stream();
     if (name != null) {
       files = files.filter(file -> file.getTitle().contains(name));
     }
@@ -65,6 +71,16 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
+  public void updateStatus(UUID id, Status status) {
+    File existingFile = fileRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+
+    existingFile.setStatus(status);
+
+    fileRepository.save(existingFile);
+  }
+
+  @Override
   public FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileMetadataRequestDto) {
 
     File existingFile = fileRepository.findById(id)
@@ -72,36 +88,44 @@ public class FileServiceImpl implements FileService {
 
     fileMapper.updateEntityFromDto(fileMetadataRequestDto, existingFile);
 
-    File updateFile = fileRepository.update(existingFile);
+    File updateFile = fileRepository.save(existingFile);
 
     return fileMapper.toFileResponseDto(updateFile);
   }
 
   @Override
-  public List<String> findAllTitles() {
-    return fileRepository.findAllTitles();
+  public List<String> findAllTitles(String login) {
+    return fileRepository.findAllByUserLogin(login).stream().map(File::getTitle).toList();
   }
 
   @Override
-  public FileMetadataResponseDto findById(UUID id) {
-    File file = fileRepository.findById(id).
-        orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+  public FileMetadataResponseDto findByUserLoginAndId(String login, UUID id) {
+    File file = fileRepository.findByUserLoginAndId(login, id).
+        orElseThrow(() -> new ResourceNotFoundException("User with login: " +login + " not own file with id: " + id + " "));
     return fileMapper.toFileResponseDto(file);
   }
 
   @Override
   public FileMetadataResponseDto findByTitle(String name) {
     File file = fileRepository.findByTitle(name).
-        orElseThrow(() -> new ResourceNotFoundException("File not found with name: " + name));
+        orElseThrow(() -> new ResourceNotFoundException("File not found with title: " + name));
     return fileMapper.toFileResponseDto(file);
+  }
+
+  @Override
+  public UUID getFileIdByLoginAndTitle(String login, String title) {
+    File file = fileRepository.findByUserLoginAndTitle(login, title).
+        orElseThrow(() -> new ResourceNotFoundException("File not found with title: " + title + " and user login: " + login));
+    return file.getId();
   }
 
 
   @Override
   public FileMetadataResponseDto deleteById(UUID id) {
-    fileRepository.findById(id).
+    File file = fileRepository.findById(id).
         orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
-    return fileMapper.toFileResponseDto(fileRepository.deleteById(id));
+    fileRepository.deleteById(id);
+    return fileMapper.toFileResponseDto(file);
   }
 
   @Override
@@ -144,9 +168,9 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public File findByPath(Path file) {
-    return fileRepository.findByPath(file).
-        orElseThrow(() -> new ResourceNotFoundException("File not found with path: " + file));
+  public File findByPath(Path path) {
+    return fileRepository.findByDownloadUrl(path.toString()).
+        orElseThrow(() -> new ResourceNotFoundException("File not found with path: " + path));
   }
 
   private Type determinateType(MultipartFile file) {
