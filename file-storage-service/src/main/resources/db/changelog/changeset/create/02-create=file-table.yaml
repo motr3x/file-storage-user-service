@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-file-table
+      author: migration
+      changes:
+        - createTable:
+            tableName: files
+            columns:
+              - column:
+                  name: file_id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+              - column:
+                  name: size
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_login
+                  type: VARCHAR(255)
+              - column:
+                  name: download_url
+                  type: VARCHAR(255)
+              - column:
+                  name: file
+                  type: BYTEA
+              - column:
+                  name: created_at
+                  type: DATE
+              - column:
+                  name: update_date
+                  type: DATE
+        - addForeignKeyConstraint:
+            baseTableName: files
+            baseColumnNames: user_id
+            referencedTableName: CUSTOM_USER
+            referencedColumnNames: id
+            constraintName: fk_files_user
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_files_user_id
+            tableName: files
+            columns:
+              - column:
+                  name: user_id

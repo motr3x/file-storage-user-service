@@ -1,6 +1,6 @@
 spring:
   liquibase:
-    enabled: false
+    enabled: true
   application:
     name: file-storage-service
   datasource:
@@ -10,7 +10,7 @@ spring:
     driverClassName: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
 
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 server:

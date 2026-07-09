@@ -43,8 +43,10 @@ public class FileServiceImpl implements FileService {
     User user = userRepository.findByLogin(login)
         .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
     File file = fileMapper.toEntity(fileMetadataRequestDto);
-    file.setCreatedAt(LocalDate.now());
     file.setUserLogin(login);
+    file.setUser(user);
+    file.setCreatedAt(LocalDate.now());
+    file.setUpdateDate(LocalDate.now());
     fileRepository.save(file);
     return fileMapper.toFileResponseDto(fileRepository.save(file));
   }

@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-comment-table
+      author: migration
+      changes:
+        - createTable:
+            tableName: comment
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: text
+                  type: TEXT
+              - column:
+                  name: file_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: comment
+            baseColumnNames: file_id
+            referencedTableName: files
+            referencedColumnNames: file_id
+            constraintName: fk_comment_file
+            onDelete: CASCADE
+        - createIndex:
+            indexName: idx_comment_file_id
+            tableName: comment
+            columns:
+              - column:
+                  name: file_id
