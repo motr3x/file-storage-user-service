@@ -53,20 +53,12 @@ public class FileServiceImpl implements FileService {
 
   public List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start,
       LocalDate end, Type type) {
-    Stream<File> files = fileRepository.findAllByUserLogin(login).stream();
-    if (name != null) {
-      files = files.filter(file -> file.getTitle().contains(name));
+    String toType = null;
+    if(!(type == null)){
+      toType = type.name();
     }
-    if (start != null) {
-      files = files.filter(file -> file.getCreatedAt().isAfter(start));
-    }
-    if (end != null) {
-      files = files.filter(file -> file.getCreatedAt().isBefore(end));
-    }
-    if (type != null) {
-      files = files.filter(file -> file.getType().equals(type));
-    }
-    List<FileMetadataResponseDto> fileMetadataResponseDtos = files.map(
+    List<File> files = fileRepository.findAllWithFilter(login, name, start, end, toType);
+    List<FileMetadataResponseDto> fileMetadataResponseDtos = files.stream().map(
         fileMapper::toFileResponseDto).toList();
     return fileMetadataResponseDtos;
   }
