@@ -22,3 +22,5 @@ topic:
 api:
   server:
     url: http://localhost:8080
+storage:
+  location: http://localhost:8080/api/storage

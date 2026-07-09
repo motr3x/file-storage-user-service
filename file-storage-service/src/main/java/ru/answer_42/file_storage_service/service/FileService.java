@@ -38,4 +38,6 @@ public interface FileService {
   File findByPath(Path file);
 
   UUID getFileIdByLoginAndTitle(String login, String title);
+
+  List<FileMetadataResponseDto> findByFileNamesId(String login, List<UUID> fileNames);
 }

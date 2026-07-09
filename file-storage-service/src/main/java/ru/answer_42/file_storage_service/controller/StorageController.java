@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -63,9 +65,10 @@ public class StorageController {
       summary = "Сохранить файл в хранилище",
       description = "В ответе возвращается метаданные сохраненного файла")
   @PostMapping("/{login}/upload")
-  public ResponseEntity<FileMetadataResponseDto> handleFileUpload(@Parameter(
+  public ResponseEntity<FileMetadataResponseDto> handleFileUpload(
+      @Parameter(
           description = "Логин пользователя, который сохраняет файл в хранилище",
-          required = true) @PathVariable String login,
+          required = true) @PathVariable @NotBlank String login,
       @Parameter(
           description = "Файл, который сохраняется в хранилище",
           required = true) @RequestParam("file") MultipartFile file) {
@@ -86,11 +89,13 @@ public class StorageController {
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
   @GetMapping("/{login}/{filename:.+}")
-  public ResponseEntity<Resource> serveFile(@Parameter(
-      description = "Логин пользователя, который запрашивает файл из хранилища",
-      required = true) @PathVariable String login, @Parameter(
-      description = "Имя файла, который запрашивают",
-      required = true) @PathVariable String filename) {
+  public ResponseEntity<Resource> serveFile(
+      @Parameter(
+        description = "Логин пользователя, который запрашивает файл из хранилища",
+        required = true) @PathVariable @NotBlank String login,
+      @Parameter(
+        description = "Имя файла, который запрашивают",
+        required = true) @PathVariable @NotBlank String filename) {
     byte[] file = storageService.loadAsResource(login, filename);
 
     if (file == null) {
@@ -114,12 +119,13 @@ public class StorageController {
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
   @PostMapping("/{login}")
-  public ResponseEntity<Resource> serveFiles(@Parameter(
+  public ResponseEntity<Resource> serveFiles(
+      @Parameter(
           description = "Логин пользователя, который сохраняет архив файлов в хранилище",
-          required = true) @PathVariable String login,
+          required = true) @PathVariable @NotBlank String login,
       @Parameter(
           description = "Список с id файлов, которые пользователь желает сохранить",
-          required = true) @RequestBody List<UUID> filesId) {
+          required = true) @RequestBody @NotEmpty List<UUID> filesId) {
 
     Resource resource = storageService.loadAll(login, filesId);
 

@@ -7,7 +7,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.executable.ValidateOnExecution;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
+import ru.answer_42.file_storage_service.exception.validation.Marker;
 import ru.answer_42.file_storage_service.model.Type;
 import ru.answer_42.file_storage_service.service.FileService;
 
@@ -43,7 +47,6 @@ public class FileMetadataController {
 
   //TODO
   // После валидации дтошки дописать документацию по исключениям связанных с валидацией
-  // Если пользователя с такми id нет, то он создается
   @ApiResponses({
       @ApiResponse(responseCode = "201", description = "Метаданные файла успешно сохранён",
           content = {@Content(mediaType = "application/json",
@@ -56,11 +59,11 @@ public class FileMetadataController {
       @Parameter(
           description = "Логин пользователя, метаданными о файле по которому сохраняются",
           required = true)
-      @PathVariable  String login,
+      @PathVariable @NotBlank String login,
       @Parameter(
           description = "Метаданными о файле, который сохраняют",
           required = true)
-      @RequestBody  FileMetadataRequestDto fileMetadataRequestDto) {
+      @RequestBody @NotNull @Valid FileMetadataRequestDto fileMetadataRequestDto) {
     FileMetadataResponseDto fileMetadataResponseDto = fileService.save(login, fileMetadataRequestDto);
     return new ResponseEntity<>(fileMetadataResponseDto, HttpStatus.CREATED);
   }
@@ -81,11 +84,11 @@ public class FileMetadataController {
       @Parameter(
           description = "Логин пользователя, метаданными о файле по которому сохраняются",
           required = true)
-      @PathVariable String login,
+      @PathVariable @NotBlank String login,
       @Parameter(
           description = "ID метаданных файла, по которым идет запрос",
           required = true)
-      @PathVariable UUID id) {
+      @PathVariable @NotNull UUID id) {
     FileMetadataResponseDto fileMetadataResponseDto = fileService.findByUserLoginAndId(login, id);
     return ResponseEntity.ok(fileMetadataResponseDto);
   }
@@ -105,17 +108,17 @@ public class FileMetadataController {
   @PutMapping("/{login}/{id}")
   public ResponseEntity<FileMetadataResponseDto> update(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому сохраняются",
+          description = "Логин пользователя, метаданными о файле по которому обновляются",
           required = true)
-      @PathVariable String login,
+      @PathVariable @NotBlank String login,
       @Parameter(
           description = "ID метаданных файла, данные которого обновляются",
           required = true)
-      @PathVariable UUID id,
+      @PathVariable @NotNull UUID id,
       @Parameter(
           description = "Файл с полями, которые стоит обновить у заданного файла",
           required = true)
-      @RequestBody FileMetadataRequestDto fileMetadataRequestDto) {
+      @RequestBody @Valid FileMetadataRequestDto fileMetadataRequestDto) {
     fileService.findByUserLoginAndId(login, id);
     FileMetadataResponseDto fileMetadataResponseDto = fileService.update(id,
         fileMetadataRequestDto);
@@ -136,13 +139,13 @@ public class FileMetadataController {
   @DeleteMapping("/{login}/{id}")
   public ResponseEntity<FileMetadataResponseDto> delete(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому сохраняются",
+          description = "Логин пользователя, метаданными о файле по которому удаляются",
           required = true)
-      @PathVariable String login,
+      @PathVariable @NotBlank String login,
       @Parameter(
           description = "ID метаданных файла, который удаляется",
           required = true)
-      @PathVariable UUID id) {
+      @PathVariable @NotNull UUID id) {
     fileService.findByUserLoginAndId(login, id);
     FileMetadataResponseDto fileMetadataResponseDto = fileService.deleteById(id);
     return ResponseEntity.ok(fileMetadataResponseDto);
@@ -163,9 +166,9 @@ public class FileMetadataController {
   @GetMapping("/{login}/titles")
   public ResponseEntity<List<String>> readTitles(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому сохраняются",
+          description = "Логин пользователя, метаданными о файле по которому запрашиваются",
           required = true)
-      @PathVariable String login
+      @PathVariable @NotBlank String login
   ) {
     final List<String> titles = fileService.findAllTitles(login);
     return titles != null ? new ResponseEntity<>(titles, HttpStatus.OK)
@@ -189,11 +192,11 @@ public class FileMetadataController {
       @Parameter(
           description = "Логин пользователя, данные о файле по которому запрашиваются",
           required = true)
-      @PathVariable String login,
+      @PathVariable @NotBlank String login,
       @Parameter(
           description = "Фильтр по имени(возможно частичное вхождение)",
           required = false)
-      @RequestParam(required = false) String name,
+      @RequestParam(required = false)  String name,
       @Parameter(
           description = "Фильтр по дате изменения(диапазон от)",
           required = false)

@@ -42,8 +42,8 @@ import ru.answer_42.file_storage_service.service.StorageService;
 
 @Service
 public class StorageServiceImpl implements StorageService {
-
-  private final static long MAX_SIZE = 15 * 1024 * 1024L;
+  public final static long MIN_SIZE = 1L;
+  public final static long MAX_SIZE = 15 * 1024 * 1024L;
   private final Path rootLocation;
   private final FileService fileService;
   private final AntivirusService antivirusService;
@@ -80,7 +80,7 @@ public class StorageServiceImpl implements StorageService {
 //            "Cannot store file outside current directory.");
 //      }
       Path destinationFile = this.rootLocation.resolve(
-              Paths.get(file.getOriginalFilename()))
+              login).resolve(Paths.get(file.getOriginalFilename()))
           .normalize();
       if (file.getSize() > MAX_SIZE) {
         throw new FileSizeLimitExceededException("File is too large", file.getSize(), MAX_SIZE);
@@ -116,23 +116,13 @@ public class StorageServiceImpl implements StorageService {
     }
   }
 
-  public boolean accessCheck(String login, FileMetadataResponseDto responseDto) {
-    if (!(responseDto.getUserLogin().equals(login))) {
-      throw new AccessDeniedException(
-          "User with login: " + login + " hasn't access to file: " + responseDto.getTitle());
-    }
-    return true;
-  }
+
 
   @Override
   public Resource loadAll(String login, List<UUID> fileNames) {
-//    fileNames = fileNames.stream().filter(id -> accessCheck(login, fileService.findById(id))).toList();
     Executor executor = Executors.newFixedThreadPool(10);
-    List<CompletableFuture<FileMetadataResponseDto>> futures = fileNames.stream()
-        .map(id -> CompletableFuture.supplyAsync(() -> fileService.findByUserLoginAndId(login, id), executor))
-        .toList();
-    List<FileMetadataResponseDto> desiredFiles = futures.stream().map(CompletableFuture::join)
-        .toList();
+    CompletableFuture<List<FileMetadataResponseDto>> futures =  CompletableFuture.supplyAsync(() -> fileService.findByFileNamesId(login, fileNames), executor);
+    List<FileMetadataResponseDto> desiredFiles = futures.join();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zout = new ZipOutputStream(baos)) {
       for (FileMetadataResponseDto file : desiredFiles) {

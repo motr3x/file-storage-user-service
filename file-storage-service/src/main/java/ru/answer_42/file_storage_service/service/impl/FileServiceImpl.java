@@ -1,5 +1,7 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -7,14 +9,18 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.webresources.FileResource;
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto.FileMetadataResponseDtoBuilder;
+import ru.answer_42.file_storage_service.exception.AccessDeniedException;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileContent;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
+import ru.answer_42.file_storage_service.exception.validation.Marker;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
@@ -41,13 +47,6 @@ public class FileServiceImpl implements FileService {
     file.setUserLogin(login);
     fileRepository.save(file);
     return fileMapper.toFileResponseDto(fileRepository.save(file));
-  }
-
-  public void updateStatus(String login, String title, Status status) {
-    File file = fileRepository.findByUserLoginAndTitle(login, title)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found with login: " + login));
-    file.setStatus(status);
-    fileRepository.save(file);
   }
 
   public List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start,
@@ -80,6 +79,19 @@ public class FileServiceImpl implements FileService {
     fileRepository.save(existingFile);
   }
 
+  @Override
+  public List<FileMetadataResponseDto> findByFileNamesId(String login, List<UUID> fileNames) {
+    List<FileMetadataResponseDto> files = fileRepository.findAll().stream().filter(f -> accessCheck(f.getUserLogin(), fileMapper.toFileResponseDto(f)) && fileNames.contains(f.getId())).map(fileMapper::toFileResponseDto).toList();
+    return files;
+  }
+
+  private boolean accessCheck(String login, FileMetadataResponseDto responseDto) {
+    if (!(responseDto.getUserLogin().equals(login))) {
+      throw new AccessDeniedException(
+          "User with login: " + login + " hasn't access to file: " + responseDto.getTitle());
+    }
+    return true;
+  }
   @Override
   public FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileMetadataRequestDto) {
 
@@ -131,22 +143,6 @@ public class FileServiceImpl implements FileService {
   @Override
   public FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
       Path destinationFile) {
-//    FileRequestDtoBuilder fileRequestDtoBuilder = FileRequestDto.builder()
-//        .file()
-//    FileBuilder fileEntity = File.builder()
-//        .userLogin(login)
-//        .title(file.getOriginalFilename())
-//        .size(file.getSize())
-//        .type(determinateType(file))
-//        .downloadUrl(destinationFile.toString())
-//        .status(Status.UPLOAD)
-//        .createdAt(LocalDate.now())
-//        .updateDate(LocalDate.now());
-//    try {
-//      fileEntity.file(file.getBytes());
-//    } catch (IOException e){
-//      throw new UnsupportedFileContent("File: " + file.getOriginalFilename() + " has unsupported content");
-//    }
     FileMetadataResponseDtoBuilder fileMetadataBuilder = FileMetadataResponseDto.builder();
     try {
       fileMetadataBuilder.file(file.getBytes());

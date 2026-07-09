@@ -1,20 +1,29 @@
 package ru.answer_42.file_storage_service.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component
+@Getter
+@Setter
+@Validated
+@ConfigurationProperties(prefix="topic")
 public class Producer {
 
-  @Value("${topic.name}")
-  private String orderTopic;
+  @NotEmpty
+  private String name;
 
   private final ObjectMapper objectMapper;
   private final KafkaTemplate<String, String> kafkaTemplate;
@@ -28,7 +37,7 @@ public class Producer {
   public String sendMessage(FileMetadataRequestDto fileMetadataRequestDto)
       throws JsonProcessingException {
     String orderAsMessage = objectMapper.writeValueAsString(fileMetadataRequestDto);
-    kafkaTemplate.send(orderTopic, orderAsMessage);
+    kafkaTemplate.send(name, orderAsMessage);
 
     log.info("food order produced {}", orderAsMessage);
 
