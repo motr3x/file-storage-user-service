@@ -1,16 +1,27 @@
 spring:
   application:
     name: user-service
+  liquibase:
+    enabled: true
+  datasource:
+    url: jdbc:postgresql://${PGSQL_SERVICE_HOST}:${PGSQL_SERVICE_PORT}/user_db
+    username: postgres
+    password: ${postgres-password}
+    driverClassName: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
   kafka:
     consumer:
       group-id: "default"
 
 server:
-  port: 8081
-
+  port: ${SERVICE_PORT}
 topic:
   name: t.file.order
 
 api:
   server:
-    url: http://localhost:8081
+    url: http://${SERVICE_HOST}:${SERVICE_PORT}

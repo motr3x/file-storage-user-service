@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-user-table
+      author: migration
+      changes:
+        - createTable:
+            tableName: CUSTOM_USER
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: login
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: role
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
