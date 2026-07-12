@@ -1,5 +1,6 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import ru.answer_42.file_storage_service.model.User;
 import ru.answer_42.file_storage_service.repository.FileRepository;
 import ru.answer_42.file_storage_service.repository.UserRepository;
 import ru.answer_42.file_storage_service.service.FileService;
+import ru.answer_42.file_storage_service.service.Producer;
 
 @Service
 @RequiredArgsConstructor
@@ -37,17 +39,22 @@ public class FileServiceImpl implements FileService {
   private final FileRepository fileRepository;
   private final UserRepository userRepository;
   private final FileMapper fileMapper;
+  private final Producer producer;
+
+  @Override
+  public String createFileOrder(FileMetadataRequestDto fileMetadataRequestDtoDto)
+      throws JsonProcessingException {
+    return producer.sendMessage(fileMetadataRequestDtoDto);
+  }
 
   @Override
   public FileMetadataResponseDto save(String login, FileMetadataRequestDto fileMetadataRequestDto) {
     User user = userRepository.findByLogin(login)
         .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
     File file = fileMapper.toEntity(fileMetadataRequestDto);
-    file.setUserLogin(login);
     file.setUser(user);
     file.setCreatedAt(LocalDate.now());
     file.setUpdateDate(LocalDate.now());
-    fileRepository.save(file);
     return fileMapper.toFileResponseDto(fileRepository.save(file));
   }
 
@@ -74,18 +81,20 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public List<FileMetadataResponseDto> findByFileNamesId(String login, List<UUID> fileNames) {
+  public List<FileMetadataResponseDto> findByLoginAndFilesId(String login, List<UUID> fileNames) {
     List<FileMetadataResponseDto> files = fileRepository.findAll().stream().filter(f -> accessCheck(f.getUserLogin(), fileMapper.toFileResponseDto(f)) && fileNames.contains(f.getId())).map(fileMapper::toFileResponseDto).toList();
     return files;
   }
 
-  private boolean accessCheck(String login, FileMetadataResponseDto responseDto) {
+  @Override
+  public boolean accessCheck(String login, FileMetadataResponseDto responseDto) {
     if (!(responseDto.getUserLogin().equals(login))) {
       throw new AccessDeniedException(
           "User with login: " + login + " hasn't access to file: " + responseDto.getTitle());
     }
     return true;
   }
+
   @Override
   public FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileMetadataRequestDto) {
 

@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
@@ -23,11 +22,11 @@ import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.config.StorageProperties;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
-import ru.answer_42.file_storage_service.exception.AccessDeniedException;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
 import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
 import ru.answer_42.file_storage_service.exception.file.FileIsUnderScanException;
+import ru.answer_42.file_storage_service.exception.file.FileSizeLimitExceededException;
 import ru.answer_42.file_storage_service.exception.storage.StorageInitFailedException;
 import ru.answer_42.file_storage_service.exception.storage.StorageLocationEmptyException;
 import ru.answer_42.file_storage_service.exception.storage.StorageReadFailedException;
@@ -36,7 +35,6 @@ import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.service.AntivirusService;
-import ru.answer_42.file_storage_service.service.FileMetadataService;
 import ru.answer_42.file_storage_service.service.FileService;
 import ru.answer_42.file_storage_service.service.StorageService;
 
@@ -47,20 +45,17 @@ public class StorageServiceImpl implements StorageService {
   private final Path rootLocation;
   private final FileService fileService;
   private final AntivirusService antivirusService;
-  private final FileMetadataService fileMetadataService;
   private final FileMapper fileMapper;
 
   @Autowired
   public StorageServiceImpl(StorageProperties properties, FileService fileService,
-      AntivirusService antivirusService, FileMetadataService fileMetadataService,
-      FileMapper fileMapper) {
+      AntivirusService antivirusService, FileMapper fileMapper) {
     if (properties.getLocation().trim().isEmpty()) {
       throw new StorageLocationEmptyException("File upload location can not be Empty.");
     }
     this.rootLocation = Paths.get(properties.getLocation());
     this.fileService = fileService;
     this.antivirusService = antivirusService;
-    this.fileMetadataService = fileMetadataService;
     this.fileMapper = fileMapper;
   }
 
@@ -72,23 +67,12 @@ public class StorageServiceImpl implements StorageService {
       if (file.isEmpty()) {
         throw new FileIsEmptyException("Failed to store empty file.");
       }
-//      Path destinationFile = this.rootLocation.resolve(
-//              Paths.get(file.getOriginalFilename()))
-//          .normalize().toAbsolutePath();
-//      if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-//        throw new StorageException(
-//            "Cannot store file outside current directory.");
-//      }
       Path destinationFile = this.rootLocation.resolve(
               login).resolve(Paths.get(file.getOriginalFilename()))
           .normalize();
       if (file.getSize() > MAX_SIZE) {
-        throw new FileSizeLimitExceededException("File is too large", file.getSize(), MAX_SIZE);
+        throw new FileSizeLimitExceededException("File is too large");
       }
-//      try (InputStream inputStream = file.getInputStream()) {
-//        Files.copy(inputStream, destinationFile,
-//            StandardCopyOption.REPLACE_EXISTING);
-//      }
 
       FileMetadataResponseDto fileEntity = fileService.multipartFileToFileResponseDto(login, file,
           destinationFile);
@@ -97,7 +81,6 @@ public class StorageServiceImpl implements StorageService {
       CompletableFuture future = CompletableFuture.runAsync(() -> {
         fileService.updateStatus(fileId, Status.IN_PROCESS);
         if (!antivirusService.scan(file)) {
-          // advi
           throw new RuntimeException();
         }
       }, executor).exceptionally(ex -> {
@@ -105,10 +88,10 @@ public class StorageServiceImpl implements StorageService {
         throw new FileHasVirusException("File: " + file.getOriginalFilename() + " - has a virus");
       }).thenRunAsync(() -> {
         fileService.updateStatus(fileId, Status.READY);
-      }, CompletableFuture.delayedExecutor(15, TimeUnit.SECONDS, executor));
+      }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
       future.join();
       fileEntity.setStatus(Status.READY);
-      fileMetadataService.createFileOrder(
+      fileService.createFileOrder(
           fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
       return fileEntity;
     } catch (IOException e) {
@@ -116,12 +99,10 @@ public class StorageServiceImpl implements StorageService {
     }
   }
 
-
-
   @Override
   public Resource loadAll(String login, List<UUID> fileNames) {
     Executor executor = Executors.newFixedThreadPool(10);
-    CompletableFuture<List<FileMetadataResponseDto>> futures =  CompletableFuture.supplyAsync(() -> fileService.findByFileNamesId(login, fileNames), executor);
+    CompletableFuture<List<FileMetadataResponseDto>> futures =  CompletableFuture.supplyAsync(() -> fileService.findByLoginAndFilesId(login, fileNames), executor);
     List<FileMetadataResponseDto> desiredFiles = futures.join();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zout = new ZipOutputStream(baos)) {

@@ -29,7 +29,7 @@ public interface FileRepository extends JpaRepository<File, UUID> {
       + "AND  ((:#{#requestTitle} IS NULL) OR f.title LIKE CONCAT('%',:#{#requestTitle},'%')) "
       + "AND (:#{#startDate} IS NULL OR f.createdAt > :#{#startDate}) "
       + "AND (:#{#endData} IS NULL OR f.createdAt < :#{#endData}) "
-      + "AND (:#{#requestType} IS NULL OR CAST(f.type AS STRING) = :#{#requestType})")
+      + "AND (:#{#requestType} IS NULL OR f.type = :#{#requestType})")
   List<File> findAllWithFilter(
       @Param("requestLogin") String login,
       @Param("requestTitle") String title,

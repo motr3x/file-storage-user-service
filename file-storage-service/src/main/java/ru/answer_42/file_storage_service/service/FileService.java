@@ -1,6 +1,7 @@
 package ru.answer_42.file_storage_service.service;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
@@ -15,6 +16,8 @@ import ru.answer_42.file_storage_service.repository.FileRepository;
 
 public interface FileService {
 
+  boolean accessCheck(String login, FileMetadataResponseDto responseDto);
+
   FileMetadataResponseDto save(String login, FileMetadataRequestDto file);
 
   FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileDto);
@@ -28,6 +31,9 @@ public interface FileService {
   List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start, LocalDate end,
       Type type);
 
+  String createFileOrder(FileMetadataRequestDto fileMetadataRequestDtoDto)
+      throws JsonProcessingException;
+
   FileMetadataResponseDto findByTitle(String name);
 
   FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
@@ -39,5 +45,5 @@ public interface FileService {
 
   UUID getFileIdByLoginAndTitle(String login, String title);
 
-  List<FileMetadataResponseDto> findByFileNamesId(String login, List<UUID> fileNames);
+  List<FileMetadataResponseDto> findByLoginAndFilesId(String login, List<UUID> fileNames);
 }
