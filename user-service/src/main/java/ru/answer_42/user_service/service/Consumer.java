@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import ru.answer_42.user_service.dto.FileMetadataDto;
+import ru.answer_42.user_service.dto.FileMetadataOrder;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -21,7 +22,7 @@ public class Consumer {
   public void consumeMessage(String message) throws JsonProcessingException {
     log.info("message consumed {}", message);
 
-    FileMetadataDto foodOrderDto = objectMapper.readValue(message, FileMetadataDto.class);
+    FileMetadataOrder foodOrderDto = objectMapper.readValue(message, FileMetadataOrder.class);
     fileOrderService.persistFileOrder(foodOrderDto);
   }
 

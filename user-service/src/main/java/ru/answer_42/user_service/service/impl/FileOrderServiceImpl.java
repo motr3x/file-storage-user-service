@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.answer_42.user_service.dto.FileMetadataDto;
+import ru.answer_42.user_service.dto.FileMetadataOrder;
 import ru.answer_42.user_service.mapper.FileMetadataMapper;
 import ru.answer_42.user_service.model.FileMetadata;
 import ru.answer_42.user_service.service.FileOrderService;
@@ -15,15 +16,13 @@ import ru.answer_42.user_service.service.UserService;
 @RequiredArgsConstructor
 public class FileOrderServiceImpl implements FileOrderService {
 
-  private final FileMetadataMapper fileMetadataMapper;
   private final UserService userService;
 
 
-  public void persistFileOrder(FileMetadataDto fileMetadataDto) {
-    FileMetadata fileMetadata = fileMetadataMapper.toEntity(fileMetadataDto);
-    FileMetadata persistedFileMetadataDto = userService.addFileMetadata(fileMetadata);
+  public void persistFileOrder(FileMetadataOrder fileMetadataOrder) {
+    FileMetadataOrder persistedFileMetadataDto = userService.addFileMetadata(fileMetadataOrder);
 
-    log.info("food order persisted {}", persistedFileMetadataDto);
+    log.info("file order persisted {}", persistedFileMetadataDto);
   }
 
 }

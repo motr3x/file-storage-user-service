@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.answer_42.user_service.dto.FileDownloadDto;
 import ru.answer_42.user_service.dto.FileMetadataDto;
+import ru.answer_42.user_service.dto.FileMetadataOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.service.UserService;
@@ -65,9 +66,9 @@ public class UserController{
   @Operation(summary = "Получить список файлов пользователя", description = "В ответе возвращается список файлов пользователя")
   @Tag(name = "get", description = "GET-методы user API")
   @GetMapping("/{login}/files")
-  public ResponseEntity<List<FileMetadataDto>> readAllFiles(@PathVariable String login){
-    List<FileMetadataDto> fileMetadataDtos = userService.findAllFilesByLogin(login);
-    return fileMetadataDtos != null ? new ResponseEntity<>(fileMetadataDtos, HttpStatus.OK)
+  public ResponseEntity<List<FileMetadataOrder>> readAllFiles(@PathVariable String login){
+    List<FileMetadataOrder> fileMetadataOrders = userService.findAllFilesByLogin(login);
+    return fileMetadataOrders != null ? new ResponseEntity<>(fileMetadataOrders, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
 

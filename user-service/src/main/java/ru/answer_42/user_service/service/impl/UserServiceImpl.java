@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.answer_42.user_service.dto.FileDownloadDto;
 import ru.answer_42.user_service.dto.FileMetadataDto;
+import ru.answer_42.user_service.dto.FileMetadataOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.exception.ResourceNotFoundException;
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
     return userMapper.toUserResponseDto(user);
   }
 
-  public FileMetadata addFileMetadata(FileMetadata fileMetadata) {
+  public FileMetadataOrder addFileMetadata(FileMetadataOrder fileMetadata) {
     String login = fileMetadata.getUserLogin();
     User user = userRepository.findByLogin(fileMetadata.getUserLogin())
         .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
@@ -69,19 +70,19 @@ public class UserServiceImpl implements UserService {
 
 
   @Override
-  public List<FileMetadataDto> findAllFilesByLogin(String login) {
+  public List<FileMetadataOrder> findAllFilesByLogin(String login) {
     User user = userRepository.findByLogin(login).
         orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
     ;
-    return user.getFiles().stream().map(fileMetadataMapper::toFileMetadataDto).toList();
+    return user.getFiles();
   }
 
-  @Override
-  public List<FileDownloadDto> findAllLinksByLogin(String login) {
-    User user = userRepository.findByLogin(login).
-        orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
-    ;
-    return user.getFiles().stream().map(FileMetadata::getDownloadUrl).map(FileDownloadDto::new)
-        .toList();
-  }
+//  @Override
+//  public List<FileDownloadDto> findAllLinksByLogin(String login) {
+//    User user = userRepository.findByLogin(login).
+//        orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
+//    ;
+//    return user.getFiles().stream().map(FileMetadata::getDownloadUrl).map(FileDownloadDto::new)
+//        .toList();
+//  }
 }

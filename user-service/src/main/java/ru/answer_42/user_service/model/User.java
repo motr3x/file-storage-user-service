@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.answer_42.user_service.dto.FileMetadataOrder;
 
 @Getter
 @Setter
@@ -18,7 +19,7 @@ public class User {
   private UUID id;
   private String login;
   private Role role;
-  private List<FileMetadata> files = new ArrayList<>();
+  private List<FileMetadataOrder> files = new ArrayList<>();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
   private LocalDateTime createdAt = LocalDateTime.now();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
