@@ -3,11 +3,9 @@ package ru.answer_42.user_service.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import ru.answer_42.user_service.dto.FileMetadataDto;
-import ru.answer_42.user_service.dto.FileMetadataOrder;
+import ru.answer_42.user_service.model.FileOrder;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -18,11 +16,13 @@ public class Consumer {
   private final ObjectMapper objectMapper;
   private final FileOrderService fileOrderService;
 
-  @KafkaListener(topics = "${topic.name}")
-  public void consumeMessage(String message) throws JsonProcessingException {
+  private static final String orderTopic = "t.file.order";
+
+  @KafkaListener(topics = orderTopic)
+  public void consumeMessage(String message) {
     log.info("message consumed {}", message);
 
-    FileMetadataOrder foodOrderDto = objectMapper.readValue(message, FileMetadataOrder.class);
+    FileOrder foodOrderDto = objectMapper.readValue(message, FileOrder.class);
     fileOrderService.persistFileOrder(foodOrderDto);
   }
 

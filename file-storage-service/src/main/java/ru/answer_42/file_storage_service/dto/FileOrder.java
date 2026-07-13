@@ -12,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class FileMetadataOrder {
+public class FileOrder {
   private UUID id;
   private String title;
   private String userLogin;

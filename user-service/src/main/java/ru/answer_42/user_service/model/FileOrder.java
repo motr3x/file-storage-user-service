@@ -1,5 +1,7 @@
-package ru.answer_42.user_service.dto;
+package ru.answer_42.user_service.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,8 +14,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class FileMetadataOrder {
+@Entity
+public class FileOrder {
+  @Id
   private UUID id;
   private String title;
-  private String userLogin;
+  private UUID userId;
 }

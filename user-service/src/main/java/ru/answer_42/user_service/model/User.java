@@ -1,6 +1,10 @@
 package ru.answer_42.user_service.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,17 +13,21 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import ru.answer_42.user_service.dto.FileMetadataOrder;
+import org.hibernate.annotations.UuidGenerator;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
+@Table(name = "CUSTOM_USER")
 public class User {
-  private UUID id;
+  @Id
+  @GeneratedValue
+  @UuidGenerator
+  private UUID userId;
   private String login;
   private Role role;
-  private List<FileMetadataOrder> files = new ArrayList<>();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
   private LocalDateTime createdAt = LocalDateTime.now();
   @JsonFormat(pattern = "yyyy-MM-dd HH:mm")

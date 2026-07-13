@@ -1,20 +1,20 @@
 package ru.answer_42.user_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.answer_42.user_service.dto.FileDownloadDto;
-import ru.answer_42.user_service.dto.FileMetadataDto;
-import ru.answer_42.user_service.dto.FileMetadataOrder;
+import ru.answer_42.user_service.dto.UserOrder;
+import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.exception.ResourceNotFoundException;
-import ru.answer_42.user_service.mapper.FileMetadataMapper;
 import ru.answer_42.user_service.mapper.UserMapper;
-import ru.answer_42.user_service.model.FileMetadata;
 import ru.answer_42.user_service.model.User;
+import ru.answer_42.user_service.repository.FileOrderRepository;
 import ru.answer_42.user_service.repository.UserRepository;
+import ru.answer_42.user_service.service.Producer;
 import ru.answer_42.user_service.service.UserService;
 
 @Service
@@ -22,8 +22,16 @@ import ru.answer_42.user_service.service.UserService;
 public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
-  private final FileMetadataMapper fileMetadataMapper;
   private final UserMapper userMapper;
+  private final Producer producer;
+  private final FileOrderRepository fileOrderRepository;
+
+
+  @Override
+  public String createUserOrder(UserOrder userOrder)
+      throws JsonProcessingException {
+    return producer.sendMessage(userOrder);
+  }
 
   @Override
   public List<UserResponseDto> findAll() {
@@ -33,16 +41,17 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public UserResponseDto save(UserRequestDto userRequestDto) {
+  public UserResponseDto save(UserRequestDto userRequestDto) throws JsonProcessingException {
     User user = userMapper.toEntity(userRequestDto);
     User savedUser = userRepository.save(user);
+    createUserOrder(userMapper.fromEntityToUserOrder(user));
     return userMapper.toUserResponseDto(savedUser);
   }
 
   @Override
-  public UserResponseDto update(UUID id, UserRequestDto userRequestDto) {
-    User existingUser = userRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+  public UserResponseDto update(UUID userId, UserRequestDto userRequestDto) {
+    User existingUser = userRepository.findById(userId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
     userMapper.updateEntityFromDto(userRequestDto, existingUser);
 
@@ -52,29 +61,24 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public UserResponseDto deleteById(UUID id) {
-    User user = userRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-    userRepository.deleteById(id);
+  public UserResponseDto deleteById(UUID userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    userRepository.deleteById(userId);
     return userMapper.toUserResponseDto(user);
   }
 
-  public FileMetadataOrder addFileMetadata(FileMetadataOrder fileMetadata) {
-    String login = fileMetadata.getUserLogin();
-    User user = userRepository.findByLogin(fileMetadata.getUserLogin())
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
-    user.getFiles().add(fileMetadata);
-    userRepository.save(user);
-    return fileMetadata;
+  public FileOrder addFileMetadata(FileOrder fileOrder) {
+    return fileOrderRepository.save(fileOrder);
   }
 
 
   @Override
-  public List<FileMetadataOrder> findAllFilesByLogin(String login) {
-    User user = userRepository.findByLogin(login).
-        orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
-    ;
-    return user.getFiles();
+  public List<FileOrder> findAllFilesByLogin(UUID userId) {
+    User user = userRepository.findById(userId).
+        orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    List<FileOrder> fileOrders = fileOrderRepository.findAll().stream().filter(f -> f.getUserId().equals(userId)).toList();
+    return fileOrders;
   }
 
 //  @Override

@@ -5,6 +5,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.stereotype.Component;
+import ru.answer_42.user_service.dto.UserOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.model.User;
@@ -22,4 +23,5 @@ public interface UserMapper {
   UserResponseDto toUserResponseDto(User user);
   User toEntity(UserRequestDto userDto);
   void updateEntityFromDto(UserRequestDto userDto, @MappingTarget User user);
+  UserOrder fromEntityToUserOrder(User user);
 }

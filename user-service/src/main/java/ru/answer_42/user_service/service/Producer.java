@@ -10,7 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import ru.answer_42.user_service.dto.FileMetadataOrder;
 import ru.answer_42.user_service.dto.UserOrder;
 import tools.jackson.databind.ObjectMapper;
 
