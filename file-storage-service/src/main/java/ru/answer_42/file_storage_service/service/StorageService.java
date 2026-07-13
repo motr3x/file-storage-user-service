@@ -9,11 +9,8 @@ import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 
 public interface StorageService {
 
-  void init();
 
   FileMetadataResponseDto store(String userLogin, MultipartFile file);
-
-  List<Path> loadAll();
 
   Resource loadAll(String userLogin, List<UUID> filenames);
 
@@ -21,5 +18,4 @@ public interface StorageService {
 
   byte[] loadAsResource(String userLogin, String filename);
 
-  void deleteAll();
 }

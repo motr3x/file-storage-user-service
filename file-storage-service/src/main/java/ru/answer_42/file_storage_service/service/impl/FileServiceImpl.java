@@ -172,7 +172,7 @@ public class FileServiceImpl implements FileService {
         orElseThrow(() -> new ResourceNotFoundException("File not found with path: " + path));
   }
 
-  private Type determinateType(MultipartFile file) {
+  public Type determinateType(MultipartFile file) {
     String fileName = file.getOriginalFilename();
     if (fileName == null || !fileName.contains(".")) {
       throw new IllegalArgumentException("Invalid filename");

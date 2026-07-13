@@ -2,7 +2,6 @@ package ru.answer_42.file_storage_service.service.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.config.StorageProperties;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
@@ -27,9 +25,7 @@ import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
 import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
 import ru.answer_42.file_storage_service.exception.file.FileIsUnderScanException;
 import ru.answer_42.file_storage_service.exception.file.FileSizeLimitExceededException;
-import ru.answer_42.file_storage_service.exception.storage.StorageInitFailedException;
 import ru.answer_42.file_storage_service.exception.storage.StorageLocationEmptyException;
-import ru.answer_42.file_storage_service.exception.storage.StorageReadFailedException;
 import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
@@ -40,6 +36,7 @@ import ru.answer_42.file_storage_service.service.StorageService;
 
 @Service
 public class StorageServiceImpl implements StorageService {
+
   public final static long MIN_SIZE = 1L;
   public final static long MAX_SIZE = 15 * 1024 * 1024L;
   private final Path rootLocation;
@@ -76,7 +73,8 @@ public class StorageServiceImpl implements StorageService {
 
       FileMetadataResponseDto fileEntity = fileService.multipartFileToFileResponseDto(login, file,
           destinationFile);
-      FileMetadataResponseDto fileMetadataResponseDto = fileService.save(login, fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
+      FileMetadataResponseDto fileMetadataResponseDto = fileService.save(login,
+          fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
       UUID fileId = fileService.getFileIdByLoginAndTitle(login, fileMetadataResponseDto.getTitle());
       CompletableFuture future = CompletableFuture.runAsync(() -> {
         fileService.updateStatus(fileId, Status.IN_PROCESS);
@@ -102,7 +100,8 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public Resource loadAll(String login, List<UUID> fileNames) {
     Executor executor = Executors.newFixedThreadPool(10);
-    CompletableFuture<List<FileMetadataResponseDto>> futures =  CompletableFuture.supplyAsync(() -> fileService.findByLoginAndFilesId(login, fileNames), executor);
+    CompletableFuture<List<FileMetadataResponseDto>> futures = CompletableFuture.supplyAsync(
+        () -> fileService.findByLoginAndFilesId(login, fileNames), executor);
     List<FileMetadataResponseDto> desiredFiles = futures.join();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zout = new ZipOutputStream(baos)) {
@@ -122,18 +121,6 @@ public class StorageServiceImpl implements StorageService {
     }
     ByteArrayResource byteArrayResource = new ByteArrayResource(baos.toByteArray());
     return byteArrayResource;
-  }
-
-  @Override
-  public List<Path> loadAll() {
-    try {
-      return Files.walk(this.rootLocation, 1)
-          .filter(path -> !path.equals(this.rootLocation))
-          .map(this.rootLocation::relativize).map(Path::getFileName).toList();
-    } catch (IOException e) {
-      throw new StorageReadFailedException("Failed to read stored files");
-    }
-
   }
 
   @Override
@@ -159,40 +146,6 @@ public class StorageServiceImpl implements StorageService {
     } else {
       throw new ResourceNotFoundException(
           "Could not read file: " + filename);
-    }
-
-//    } catch (MalformedURLException e) {
-//      throw new StorageFileNotFoundException("Could not read file: " + filename, e);
-//    }
-//      Resource resource = new UrlResource(file.toUri());
-//      if (resource.exists() || resource.isReadable()) {
-//        FileResponseDto fileResponseDto = fileService.findByTitle(filename);
-//        if (fileResponseDto.getStatus().equals(Status.IN_PROCESS)) {
-//          throw new FileIsUnderScanException(
-//              "File: " + fileResponseDto.getTitle() + " is under scan");
-//        }
-//        return resource;
-//      } else {
-//        throw new StorageFileNotFoundException(
-//            "Could not read file: " + filename);
-//
-//      }
-//    } catch (MalformedURLException e) {
-//      throw new StorageFileNotFoundException("Could not read file: " + filename, e);
-//    }
-  }
-
-  @Override
-  public void deleteAll() {
-    FileSystemUtils.deleteRecursively(rootLocation.toFile());
-  }
-
-  @Override
-  public void init() {
-    try {
-      Files.createDirectories(rootLocation);
-    } catch (IOException e) {
-      throw new StorageInitFailedException("Could not initialize storage");
     }
   }
 }

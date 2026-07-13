@@ -46,4 +46,6 @@ public interface FileService {
   UUID getFileIdByLoginAndTitle(String login, String title);
 
   List<FileMetadataResponseDto> findByLoginAndFilesId(String login, List<UUID> fileNames);
+
+  Type determinateType(MultipartFile file);
 }
