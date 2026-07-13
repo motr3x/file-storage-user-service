@@ -40,7 +40,7 @@ public class File {
   private Status status;
   @ManyToOne
   @JoinColumn(name = "user_id")
-  private User user;
+  private UserOrder userOrder;
   private String userLogin;
   private String downloadUrl;
   private byte[] file;

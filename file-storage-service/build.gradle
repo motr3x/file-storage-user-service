@@ -48,6 +48,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	testImplementation("org.springframework.boot:spring-boot-starter-security-test")
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {

@@ -5,6 +5,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.stereotype.Component;
+import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
 import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.model.File;
@@ -21,6 +22,10 @@ import ru.answer_42.file_storage_service.model.File;
 public interface FileMapper {
 
   FileMetadataResponseDto toFileResponseDto(File file);
+
+  FileMetadataOrder toFileMetadataOrderFromFile(File file);
+
+  FileMetadataOrder toFileMetadataOrderFromFileResponseDto(FileMetadataResponseDto fileMetadataResponseDto);
 
   FileMetadataRequestDto toFileRequestDtoFromFileResponseDto(
       FileMetadataResponseDto fileMetadataResponseDto);

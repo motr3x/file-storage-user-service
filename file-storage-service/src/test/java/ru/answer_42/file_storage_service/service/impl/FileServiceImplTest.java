@@ -32,9 +32,9 @@ import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
-import ru.answer_42.file_storage_service.model.User;
+import ru.answer_42.file_storage_service.model.UserOrder;
 import ru.answer_42.file_storage_service.repository.FileRepository;
-import ru.answer_42.file_storage_service.repository.UserRepository;
+import ru.answer_42.file_storage_service.repository.UserOrderRepository;
 import ru.answer_42.file_storage_service.service.Producer;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,7 +52,7 @@ public class FileServiceImplTest {
   @Mock
   private FileRepository fileRepository;
   @Mock
-  private UserRepository userRepository;
+  private UserOrderRepository userOrderRepository;
   @Mock
   private FileMapper fileMapper;
   @Mock
@@ -66,19 +66,19 @@ public class FileServiceImplTest {
   private static File file;
   private static FileMetadataResponseDto fileMetadataResponseDto;
   private static byte[] bytes;
-  private static User user;
+  private static UserOrder userOrder;
   private static List<UUID> filesUUID;
   private static List<File> files = new ArrayList<>();
 
   @AfterEach
   void afterEach() {
-    verifyNoMoreInteractions(fileRepository, userRepository, fileMapper, producer);
+    verifyNoMoreInteractions(fileRepository, userOrderRepository, fileMapper, producer);
   }
 
   @BeforeAll()
   static void init() {
     filesUUID = List.of(UUID.randomUUID(), UUID.randomUUID());
-    user = new User(null, USER_LOGIN, null, null);
+    userOrder = new UserOrder(null, USER_LOGIN, null, null);
     bytes = new byte[]{1, 3, 1};
     fileDto = FileMetadataRequestDto.builder()
         .title(FILE_TITLE)
@@ -212,12 +212,12 @@ public class FileServiceImplTest {
   void success_save_file_with_correct_fields() {
     //Given
     var captor = ArgumentCaptor.forClass(File.class);
-    when(userRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.of(user));
+    when(userOrderRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.of(userOrder));
     when(fileMapper.toEntity(fileDto)).thenReturn(file);
     when(fileRepository.save(captor.capture())).thenReturn(file);
     when(fileMapper.toFileResponseDto(file)).thenReturn(fileMetadataResponseDto);
 
-    file.setUser(user);
+    file.setUserOrder(userOrder);
     file.setCreatedAt(LocalDate.now());
     file.setUpdateDate(LocalDate.now());
 
@@ -226,7 +226,7 @@ public class FileServiceImplTest {
 
     //Then
     assertThat(file).isEqualTo(captor.getValue());
-    verify(userRepository, times(1)).findByLogin(USER_LOGIN);
+    verify(userOrderRepository, times(1)).findByLogin(USER_LOGIN);
     verify(fileRepository, times(1)).save(captor.getValue());
   }
 
@@ -236,7 +236,7 @@ public class FileServiceImplTest {
     //Given
     String expectedMessage = "User not found with login: " + USER_LOGIN;
     FileMetadataRequestDto fileMetadataRequestDto = new FileMetadataRequestDto();
-    when(userRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.empty());
+    when(userOrderRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.empty());
 
     //When
     ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class, () -> {
@@ -246,7 +246,7 @@ public class FileServiceImplTest {
     //Then
     String actualMessage = thrown.getMessage();
     assertThat(actualMessage).isEqualTo(expectedMessage);
-    verify(userRepository, times(1))
+    verify(userOrderRepository, times(1))
         .findByLogin(USER_LOGIN);
   }
 

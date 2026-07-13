@@ -15,4 +15,5 @@ import lombok.Setter;
 public class FileMetadataOrder {
   private UUID id;
   private String title;
+  private String userLogin;
 }

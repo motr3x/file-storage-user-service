@@ -11,8 +11,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: localhost
+      timeout: 60000
+      port: 6379
 server:
   port: ${SERVICE_PORT}
 

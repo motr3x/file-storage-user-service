@@ -90,7 +90,7 @@ public class StorageServiceImpl implements StorageService {
       future.join();
       fileEntity.setStatus(Status.READY);
       fileService.createFileOrder(
-          fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
+          fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity));
       return fileEntity;
     } catch (IOException e) {
       throw new StorageStoreFailedException("Failed to store file.");
