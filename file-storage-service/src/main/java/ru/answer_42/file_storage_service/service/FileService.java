@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileOrder;
-import ru.answer_42.file_storage_service.dto.FileRequestDto;
-import ru.answer_42.file_storage_service.dto.FileResponseDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
+import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
@@ -32,7 +32,8 @@ public interface FileService {
   List<FileResponseDto> findAll(UUID userId, String name, LocalDate start, LocalDate end,
       Type type);
 
-  String createFileOrder(FileOrder fileOrder)
+
+  String createFileOrder(FileMetadataOrder fileMetadataOrder)
       throws JsonProcessingException;
 
   FileResponseDto findByTitle(String name);
@@ -50,4 +51,6 @@ public interface FileService {
 
   Type determinateType(MultipartFile file);
 
+
+  UserOrder addFileMetadata(UserOrder userOrder);
 }

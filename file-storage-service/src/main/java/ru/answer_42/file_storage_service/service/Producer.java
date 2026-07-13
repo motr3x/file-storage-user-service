@@ -10,7 +10,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import ru.answer_42.file_storage_service.dto.FileOrder;
+
+import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
+import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -33,9 +35,10 @@ public class Producer {
     this.objectMapper = objectMapper;
   }
 
-  public String sendMessage(FileOrder fileOrder)
+
+  public String sendMessage(FileMetadataOrder fileMetadataOrder)
       throws JsonProcessingException {
-    String orderAsMessage = objectMapper.writeValueAsString(fileOrder);
+    String orderAsMessage = objectMapper.writeValueAsString(fileMetadataOrder);
     kafkaTemplate.send(name, orderAsMessage);
 
     log.info("file order produced {}", orderAsMessage);

@@ -90,10 +90,15 @@ public class StorageServiceImpl implements StorageService {
       }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
       future.join();
       fileEntity.setStatus(Status.READY);
+<<<<<<< HEAD
       FileOrder fileOrder =  fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity);
       fileOrder.setUserId(userId);
       fileOrder.setId(fileId);
       fileService.createFileOrder(fileOrder);
+=======
+      fileService.createFileOrder(
+          fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity));
+>>>>>>> 53ad478 (feat(file-storage): refactor kafka service & add demo redis service)
       return fileEntity;
     } catch (IOException e) {
       throw new StorageStoreFailedException("Failed to store file.");

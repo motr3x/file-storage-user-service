@@ -38,7 +38,10 @@ public class File {
   private Type type;
   private Long size;
   private Status status;
-  private UUID userId;
+  @ManyToOne
+  @JoinColumn(name = "user_id")
+  private UserOrder userOrder;
+  private String userLogin;
   private String downloadUrl;
   private byte[] file;
   @OneToMany(mappedBy = "file")

@@ -15,5 +15,5 @@ import lombok.Setter;
 public class FileOrder {
   private UUID id;
   private String title;
-  private UUID userId;
+  private String userLogin;
 }
