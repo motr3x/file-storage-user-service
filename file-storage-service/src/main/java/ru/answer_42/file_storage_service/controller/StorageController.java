@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.AccessDeniedException;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
@@ -44,7 +45,7 @@ public class StorageController {
   @ApiResponses({
       @ApiResponse(responseCode = "201", description = "Файл успешно сохранён в хранилище",
           content = {@Content(mediaType = "application/json",
-              schema = @Schema(implementation = FileMetadataResponseDto.class))}),
+              schema = @Schema(implementation = FileResponseDto.class))}),
       @ApiResponse(responseCode = "400", description = "Указанный тип файла не поддерживается",
           content = {@Content(mediaType = "application/json",
               schema = @Schema(implementation = UnsupportedFileTypeException.class))}),
@@ -64,16 +65,16 @@ public class StorageController {
   @Operation(
       summary = "Сохранить файл в хранилище",
       description = "В ответе возвращается метаданные сохраненного файла")
-  @PostMapping("/{login}/upload")
-  public ResponseEntity<FileMetadataResponseDto> handleFileUpload(
+  @PostMapping("/{userId}/upload")
+  public ResponseEntity<FileResponseDto> handleFileUpload(
       @Parameter(
           description = "Логин пользователя, который сохраняет файл в хранилище",
-          required = true) @PathVariable @NotBlank String login,
+          required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
           description = "Файл, который сохраняется в хранилище",
           required = true) @RequestParam("file") MultipartFile file) {
-    FileMetadataResponseDto fileMetadataResponseDto = storageService.store(login, file);
-    return new ResponseEntity<>(fileMetadataResponseDto, HttpStatus.CREATED);
+    FileResponseDto fileResponseDto = storageService.store(userId, file);
+    return new ResponseEntity<>(fileResponseDto, HttpStatus.CREATED);
   }
 
   @ApiResponses({
@@ -88,15 +89,15 @@ public class StorageController {
               schema = @Schema(implementation = FileIsUnderScanException.class))})
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
-  @GetMapping("/{login}/{filename:.+}")
+  @GetMapping("/{userId}/{filename:.+}")
   public ResponseEntity<Resource> serveFile(
       @Parameter(
         description = "Логин пользователя, который запрашивает файл из хранилища",
-        required = true) @PathVariable @NotBlank String login,
+        required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
         description = "Имя файла, который запрашивают",
         required = true) @PathVariable @NotBlank String filename) {
-    byte[] file = storageService.loadAsResource(login, filename);
+    byte[] file = storageService.loadAsResource(userId, filename);
 
     if (file == null) {
       return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -118,16 +119,16 @@ public class StorageController {
               schema = @Schema(implementation = AccessDeniedException.class))}),
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
-  @PostMapping("/{login}")
+  @PostMapping("/{userId}")
   public ResponseEntity<Resource> serveFiles(
       @Parameter(
           description = "Логин пользователя, который сохраняет архив файлов в хранилище",
-          required = true) @PathVariable @NotBlank String login,
+          required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
           description = "Список с id файлов, которые пользователь желает сохранить",
           required = true) @RequestBody @NotEmpty List<UUID> filesId) {
 
-    Resource resource = storageService.loadAll(login, filesId);
+    Resource resource = storageService.loadAll(userId, filesId);
 
     return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
         "attachment; filename=\"" + "file_archive.zip" + "\"").body(resource);

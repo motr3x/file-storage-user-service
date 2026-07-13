@@ -5,17 +5,17 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 
 public interface StorageService {
 
 
-  FileMetadataResponseDto store(String userLogin, MultipartFile file);
+  FileResponseDto store(UUID userId, MultipartFile file);
 
-  Resource loadAll(String userLogin, List<UUID> filenames);
+  Resource loadAll(UUID userId, List<UUID> filenames);
 
   Path load(String filename);
 
-  byte[] loadAsResource(String userLogin, String filename);
+  byte[] loadAsResource(UUID userId, String filename);
 
 }

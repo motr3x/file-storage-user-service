@@ -19,7 +19,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.config.StorageProperties;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileOrder;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.file.FileHasVirusException;
 import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
@@ -58,24 +59,24 @@ public class StorageServiceImpl implements StorageService {
 
 
   @Override
-  public FileMetadataResponseDto store(String login, MultipartFile file) {
+  public FileResponseDto store(UUID userId, MultipartFile file) {
     Executor executor = Executors.newFixedThreadPool(10);
     try {
       if (file.isEmpty()) {
         throw new FileIsEmptyException("Failed to store empty file.");
       }
       Path destinationFile = this.rootLocation.resolve(
-              login).resolve(Paths.get(file.getOriginalFilename()))
+              userId.toString()).resolve(Paths.get(file.getOriginalFilename()))
           .normalize();
       if (file.getSize() > MAX_SIZE) {
         throw new FileSizeLimitExceededException("File is too large");
       }
 
-      FileMetadataResponseDto fileEntity = fileService.multipartFileToFileResponseDto(login, file,
+      FileResponseDto fileEntity = fileService.multipartFileToFileResponseDto(userId, file,
           destinationFile);
-      FileMetadataResponseDto fileMetadataResponseDto = fileService.save(login,
+      FileResponseDto fileResponseDto = fileService.save(userId,
           fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
-      UUID fileId = fileService.getFileIdByLoginAndTitle(login, fileMetadataResponseDto.getTitle());
+      UUID fileId = fileService.getFileIdByUserIdAndTitle(userId, fileResponseDto.getTitle());
       CompletableFuture future = CompletableFuture.runAsync(() -> {
         fileService.updateStatus(fileId, Status.IN_PROCESS);
         if (!antivirusService.scan(file)) {
@@ -89,8 +90,10 @@ public class StorageServiceImpl implements StorageService {
       }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
       future.join();
       fileEntity.setStatus(Status.READY);
-      fileService.createFileOrder(
-          fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity));
+      FileOrder fileOrder =  fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity);
+      fileOrder.setUserId(userId);
+      fileOrder.setId(fileId);
+      fileService.createFileOrder(fileOrder);
       return fileEntity;
     } catch (IOException e) {
       throw new StorageStoreFailedException("Failed to store file.");
@@ -98,14 +101,14 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public Resource loadAll(String login, List<UUID> fileNames) {
+  public Resource loadAll(UUID userId, List<UUID> fileNames) {
     Executor executor = Executors.newFixedThreadPool(10);
-    CompletableFuture<List<FileMetadataResponseDto>> futures = CompletableFuture.supplyAsync(
-        () -> fileService.findByLoginAndFilesId(login, fileNames), executor);
-    List<FileMetadataResponseDto> desiredFiles = futures.join();
+    CompletableFuture<List<FileResponseDto>> futures = CompletableFuture.supplyAsync(
+        () -> fileService.findByUserIdAndFilesId(userId, fileNames), executor);
+    List<FileResponseDto> desiredFiles = futures.join();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     try (ZipOutputStream zout = new ZipOutputStream(baos)) {
-      for (FileMetadataResponseDto file : desiredFiles) {
+      for (FileResponseDto file : desiredFiles) {
         ZipEntry entry1 = new ZipEntry(file.getTitle());
         zout.putNextEntry(entry1);
         // считываем содержимое файла в массив byte
@@ -129,14 +132,14 @@ public class StorageServiceImpl implements StorageService {
   }
 
   @Override
-  public byte[] loadAsResource(String userLogin, String filename) {
+  public byte[] loadAsResource(UUID userId, String filename) {
 
     Path file = load(filename);
     File resultFile = fileService.findByPath(file);
     if (!ArrayUtils.isEmpty(resultFile.getFile())) {
-      if (!resultFile.getUserLogin().equals(userLogin)) {
+      if (!resultFile.getUserId().equals(userId)) {
         throw new ResourceNotFoundException(
-            "File: " + resultFile.getTitle() + " isn't own " + userLogin);
+            "File: " + resultFile.getTitle() + " isn't own " + userId);
       }
       if (resultFile.getStatus().equals(Status.IN_PROCESS)) {
         throw new FileIsUnderScanException(

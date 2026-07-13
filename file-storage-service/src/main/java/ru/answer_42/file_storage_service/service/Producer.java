@@ -6,13 +6,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
-import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
+import ru.answer_42.file_storage_service.dto.FileOrder;
 import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
@@ -35,9 +33,9 @@ public class Producer {
     this.objectMapper = objectMapper;
   }
 
-  public String sendMessage(FileMetadataOrder fileMetadataOrder)
+  public String sendMessage(FileOrder fileOrder)
       throws JsonProcessingException {
-    String orderAsMessage = objectMapper.writeValueAsString(fileMetadataOrder);
+    String orderAsMessage = objectMapper.writeValueAsString(fileOrder);
     kafkaTemplate.send(name, orderAsMessage);
 
     log.info("file order produced {}", orderAsMessage);

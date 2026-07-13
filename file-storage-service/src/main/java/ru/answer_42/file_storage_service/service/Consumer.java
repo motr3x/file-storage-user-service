@@ -13,11 +13,14 @@ import tools.jackson.databind.ObjectMapper;
 @RequiredArgsConstructor
 public class Consumer {
 
+
   private final ObjectMapper objectMapper;
   private final UserOrderService userOrderService;
 
-  @KafkaListener(topics = "${topic.name}")
-  public void consumeMessage(String message) throws JsonProcessingException {
+  private static final String orderTopic = "t.user.order";
+
+  @KafkaListener(topics = orderTopic)
+  public void consumeMessage(String message) {
     log.info("message consumed {}", message);
 
     UserOrder userOrder = objectMapper.readValue(message, UserOrder.class);

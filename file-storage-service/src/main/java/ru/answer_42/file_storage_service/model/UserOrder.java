@@ -16,12 +16,10 @@ import org.hibernate.annotations.UuidGenerator;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "CUSTOM_USER")
+@Table(name = "USER_ORDER")
 public class UserOrder {
 
   @Id
-  @GeneratedValue
-  @UuidGenerator
-  private UUID id;
+  private UUID userId;
   private String login;
 }

@@ -14,24 +14,24 @@ import ru.answer_42.file_storage_service.model.Type;
 @Repository
 public interface FileRepository extends JpaRepository<File, UUID> {
 
-  Optional<File> findByUserLoginAndTitle(String login, String title);
+  Optional<File> findByUserIdAndTitle(UUID userId, String title);
 
-  List<File> findAllByUserLogin(String login);
+  List<File> findAllByUserId(UUID userId);
 
   Optional<File> findByTitle(String title);
 
   Optional<File> findByDownloadUrl(String url);
 
-  Optional<File> findByUserLoginAndId(String login, UUID id);
+  Optional<File> findByUserIdAndId(UUID userId, UUID fileId);
 
   @Query("SELECT f FROM File f WHERE "
-      + "(f.userLogin = :#{#requestLogin}) "
+      + "(f.userId = :#{#requestUserId}) "
       + "AND  ((:#{#requestTitle} IS NULL) OR f.title LIKE CONCAT('%',:#{#requestTitle},'%')) "
       + "AND (:#{#startDate} IS NULL OR f.createdAt > :#{#startDate}) "
       + "AND (:#{#endData} IS NULL OR f.createdAt < :#{#endData}) "
       + "AND (:#{#requestType} IS NULL OR f.type = :#{#requestType})")
   List<File> findAllWithFilter(
-      @Param("requestLogin") String login,
+      @Param("requestUserId") UUID userId,
       @Param("requestTitle") String title,
       @Param("startDate")LocalDate start,
       @Param("endData")LocalDate end,

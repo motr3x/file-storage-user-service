@@ -5,9 +5,9 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
 import org.springframework.stereotype.Component;
-import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
-import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileOrder;
+import ru.answer_42.file_storage_service.dto.FileRequestDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 
 @Mapper(
@@ -21,16 +21,16 @@ import ru.answer_42.file_storage_service.model.File;
 @Component
 public interface FileMapper {
 
-  FileMetadataResponseDto toFileResponseDto(File file);
+  FileResponseDto toFileResponseDto(File file);
 
-  FileMetadataOrder toFileMetadataOrderFromFile(File file);
+  FileOrder toFileMetadataOrderFromFile(File file);
 
-  FileMetadataOrder toFileMetadataOrderFromFileResponseDto(FileMetadataResponseDto fileMetadataResponseDto);
+  FileOrder toFileMetadataOrderFromFileResponseDto(FileResponseDto fileResponseDto);
 
-  FileMetadataRequestDto toFileRequestDtoFromFileResponseDto(
-      FileMetadataResponseDto fileMetadataResponseDto);
+  FileRequestDto toFileRequestDtoFromFileResponseDto(
+      FileResponseDto fileResponseDto);
 
-  File toEntity(FileMetadataRequestDto fileDto);
+  File toEntity(FileRequestDto fileDto);
 
-  void updateEntityFromDto(FileMetadataRequestDto fileDto, @MappingTarget File file);
+  void updateEntityFromDto(FileRequestDto fileDto, @MappingTarget File file);
 }

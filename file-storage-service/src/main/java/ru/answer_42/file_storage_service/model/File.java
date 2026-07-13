@@ -26,7 +26,7 @@ import org.hibernate.annotations.UuidGenerator;
 @NoArgsConstructor
 @Builder
 @Entity
-@Table(name = "files")
+@Table(name = "FILES")
 public class File {
 
   @Id
@@ -38,10 +38,7 @@ public class File {
   private Type type;
   private Long size;
   private Status status;
-  @ManyToOne
-  @JoinColumn(name = "user_id")
-  private UserOrder userOrder;
-  private String userLogin;
+  private UUID userId;
   private String downloadUrl;
   private byte[] file;
   @OneToMany(mappedBy = "file")

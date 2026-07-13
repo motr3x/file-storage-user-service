@@ -3,23 +3,25 @@ package ru.answer_42.file_storage_service.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
-import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto.FileMetadataResponseDtoBuilder;
+import ru.answer_42.file_storage_service.dto.FileOrder;
+import ru.answer_42.file_storage_service.dto.FileRequestDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.AccessDeniedException;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileContent;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
+
+import ru.answer_42.file_storage_service.dto.FileResponseDto.FileResponseDtoBuilder;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
@@ -37,61 +39,42 @@ public class FileServiceImpl implements FileService {
   private final UserOrderRepository userOrderRepository;
   private final FileMapper fileMapper;
   private final Producer producer;
-  private final RedisTemplate<String, FileMetadataOrder> redisTemplate;
 
-  private static final String CACHE_KEY_PREFIX = "file:";
-  private static final Duration TTL = Duration.ofMinutes(10);
 
   @Override
   public UserOrder addFileMetadata(UserOrder userOrder) {
-    String userLogin = userOrder.getLogin();
-    UserOrder user = new UserOrder();
-    user.setLogin(userLogin);
-    userOrderRepository.save(user);
-    return null;
+    return userOrderRepository.save(userOrder);
   }
 
-  public FileMetadataOrder getById(UUID id){
-    String cacheKey = CACHE_KEY_PREFIX + id;
-    FileMetadataOrder cached = redisTemplate.opsForValue().get(cacheKey);
-    if (cached != null) {
-      return cached;
-    }
-    FileMetadataOrder fromDb = fileMapper.toFileMetadataOrderFromFile(fileRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Product not found: " + id)));
 
-    // Кэшируем объект с TTL
-    redisTemplate.opsForValue().set(cacheKey, fromDb, TTL);
-
-    return fromDb;
-  }
   @Override
-  public String createFileOrder(FileMetadataOrder fileMetadataOrder)
+  public String createFileOrder(FileOrder fileOrder)
       throws JsonProcessingException {
-    return producer.sendMessage(fileMetadataOrder);
+    return producer.sendMessage(fileOrder);
   }
 
   @Override
-  public FileMetadataResponseDto save(String login, FileMetadataRequestDto fileMetadataRequestDto) {
-    UserOrder userOrder = userOrderRepository.findByLogin(login)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
+  @Transactional
+  public FileResponseDto save(UUID userId, FileRequestDto fileMetadataRequestDto) {
+    UserOrder userOrder = userOrderRepository.findById(userId)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     File file = fileMapper.toEntity(fileMetadataRequestDto);
-    file.setUserOrder(userOrder);
+    file.setUserId(userOrder.getUserId());
     file.setCreatedAt(LocalDate.now());
     file.setUpdateDate(LocalDate.now());
     return fileMapper.toFileResponseDto(fileRepository.save(file));
   }
 
-  public List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start,
+  public List<FileResponseDto> findAll(UUID userId, String name, LocalDate start,
       LocalDate end, Type type) {
     String toType = null;
     if(!(type == null)){
       toType = type.name();
     }
-    List<File> files = fileRepository.findAllWithFilter(login, name, start, end, toType);
-    List<FileMetadataResponseDto> fileMetadataResponseDtos = files.stream().map(
+    List<File> files = fileRepository.findAllWithFilter(userId, name, start, end, toType);
+    List<FileResponseDto> fileResponseDtos = files.stream().map(
         fileMapper::toFileResponseDto).toList();
-    return fileMetadataResponseDtos;
+    return fileResponseDtos;
   }
 
   @Override
@@ -105,23 +88,25 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public List<FileMetadataResponseDto> findByLoginAndFilesId(String login, List<UUID> fileNames) {
+  public List<FileResponseDto> findByUserIdAndFilesId(UUID userId, List<UUID> fileNames) {
 
-    List<FileMetadataResponseDto> files = fileRepository.findAll().stream().filter(f -> accessCheck(f.getUserLogin(), fileMapper.toFileResponseDto(f)) && fileNames.contains(f.getId())).map(fileMapper::toFileResponseDto).toList();
+    List<FileResponseDto> files = fileRepository.findAll().stream().filter(f -> accessCheck(userId, fileMapper.toFileResponseDto(f)) && fileNames.contains(f.getId())).map(fileMapper::toFileResponseDto).toList();
     return files;
   }
 
   @Override
-  public boolean accessCheck(String login, FileMetadataResponseDto responseDto) {
-    if (!(responseDto.getUserLogin().equals(login))) {
+  public boolean accessCheck(UUID userId, FileResponseDto responseDto) {
+    if (!(responseDto.getUserId().equals(userId))) {
       throw new AccessDeniedException(
-          "User with login: " + login + " hasn't access to file: " + responseDto.getTitle());
+          "User with id: " + userId + " hasn't access to file: " + responseDto.getTitle());
     }
     return true;
   }
 
   @Override
-  public FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileMetadataRequestDto) {
+  @Transactional
+  @CacheEvict(value = "file:byId", key = "#id")
+  public FileResponseDto update(UUID id, FileRequestDto fileMetadataRequestDto) {
 
     File existingFile = fileRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
@@ -130,53 +115,49 @@ public class FileServiceImpl implements FileService {
 
     File updateFile = fileRepository.save(existingFile);
 
-    String cacheKey = CACHE_KEY_PREFIX + id;
-    redisTemplate.delete(cacheKey);
-
     return fileMapper.toFileResponseDto(updateFile);
   }
 
   @Override
-  public List<String> findAllTitles(String login) {
-    return fileRepository.findAllByUserLogin(login).stream().map(File::getTitle).toList();
+  public List<String> findAllTitles(UUID userId) {
+    return fileRepository.findAllByUserId(userId).stream().map(File::getTitle).toList();
   }
 
   @Override
-  public FileMetadataResponseDto findByUserLoginAndId(String login, UUID id) {
-    File file = fileRepository.findByUserLoginAndId(login, id).
-        orElseThrow(() -> new ResourceNotFoundException("User with login: " +login + " not own file with id: " + id + " "));
+  public FileResponseDto findByUserIdAndId(UUID userId, UUID id) {
+    File file = fileRepository.findByUserIdAndId(userId, id).
+        orElseThrow(() -> new ResourceNotFoundException("User with login: " +userId + " not own file with id: " + id + " "));
     return fileMapper.toFileResponseDto(file);
   }
 
   @Override
-  public FileMetadataResponseDto findByTitle(String title) {
+  public FileResponseDto findByTitle(String title) {
     File file = fileRepository.findByTitle(title).
         orElseThrow(() -> new ResourceNotFoundException("File not found with title: " + title));
     return fileMapper.toFileResponseDto(file);
   }
 
   @Override
-  public UUID getFileIdByLoginAndTitle(String login, String title) {
-    File file = fileRepository.findByUserLoginAndTitle(login, title).
-        orElseThrow(() -> new ResourceNotFoundException("File not found with title: " + title + " and user login: " + login));
+  public UUID getFileIdByUserIdAndTitle(UUID userId, String title) {
+    File file = fileRepository.findByUserIdAndTitle(userId, title).
+        orElseThrow(() -> new ResourceNotFoundException("File not found with title: " + title + " and user login: " + userId));
     return file.getId();
   }
 
 
   @Override
-  public FileMetadataResponseDto deleteById(UUID id) {
-    File file = fileRepository.findById(id).
-        orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
-    String cacheKey = CACHE_KEY_PREFIX + id;
-    redisTemplate.delete(cacheKey);
-    fileRepository.deleteById(id);
+  @Transactional
+  public FileResponseDto deleteById(UUID fileId) {
+    File file = fileRepository.findById(fileId).
+        orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
+    fileRepository.deleteById(fileId);
     return fileMapper.toFileResponseDto(file);
   }
 
   @Override
-  public FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
+  public FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file,
       Path destinationFile) {
-    FileMetadataResponseDtoBuilder fileMetadataBuilder = FileMetadataResponseDto.builder();
+    FileResponseDtoBuilder fileMetadataBuilder = FileResponseDto.builder();
     try {
       fileMetadataBuilder.file(file.getBytes());
     } catch (IOException e) {
@@ -189,7 +170,7 @@ public class FileServiceImpl implements FileService {
         .type(determinateType(file))
         .title(file.getOriginalFilename())
         .status(Status.UPLOAD)
-        .userLogin(login)
+        .userId(userId)
         .createdAt(LocalDate.now())
         .updateDate(LocalDate.now());
 

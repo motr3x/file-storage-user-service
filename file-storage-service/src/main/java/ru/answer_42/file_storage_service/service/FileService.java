@@ -7,9 +7,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
-import ru.answer_42.file_storage_service.dto.FileMetadataOrder;
-import ru.answer_42.file_storage_service.dto.FileMetadataRequestDto;
-import ru.answer_42.file_storage_service.dto.FileMetadataResponseDto;
+import ru.answer_42.file_storage_service.dto.FileOrder;
+import ru.answer_42.file_storage_service.dto.FileRequestDto;
+import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
@@ -17,36 +17,36 @@ import ru.answer_42.file_storage_service.model.UserOrder;
 
 public interface FileService {
 
-  boolean accessCheck(String login, FileMetadataResponseDto responseDto);
+  boolean accessCheck(UUID userId, FileResponseDto responseDto);
 
-  FileMetadataResponseDto save(String login, FileMetadataRequestDto file);
+  FileResponseDto save(UUID userId, FileRequestDto file);
 
-  FileMetadataResponseDto update(UUID id, FileMetadataRequestDto fileDto);
+  FileResponseDto update(UUID id, FileRequestDto fileDto);
 
   void updateStatus(UUID id, Status status);
 
-  FileMetadataResponseDto deleteById(UUID id);
+  FileResponseDto deleteById(UUID id);
 
-  List<String> findAllTitles(String login);
+  List<String> findAllTitles(UUID userId);
 
-  List<FileMetadataResponseDto> findAll(String login, String name, LocalDate start, LocalDate end,
+  List<FileResponseDto> findAll(UUID userId, String name, LocalDate start, LocalDate end,
       Type type);
 
-  String createFileOrder(FileMetadataOrder fileMetadataOrder)
+  String createFileOrder(FileOrder fileOrder)
       throws JsonProcessingException;
 
-  FileMetadataResponseDto findByTitle(String name);
+  FileResponseDto findByTitle(String name);
 
-  FileMetadataResponseDto multipartFileToFileResponseDto(String login, MultipartFile file,
+  FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file,
       Path path);
 
-  FileMetadataResponseDto findByUserLoginAndId(String login, UUID id);
+  FileResponseDto findByUserIdAndId(UUID userId, UUID id);
 
   File findByPath(Path file);
 
-  UUID getFileIdByLoginAndTitle(String login, String title);
+  UUID getFileIdByUserIdAndTitle(UUID userId, String title);
 
-  List<FileMetadataResponseDto> findByLoginAndFilesId(String login, List<UUID> fileNames);
+  List<FileResponseDto> findByUserIdAndFilesId(UUID userId, List<UUID> fileNames);
 
   Type determinateType(MultipartFile file);
 
