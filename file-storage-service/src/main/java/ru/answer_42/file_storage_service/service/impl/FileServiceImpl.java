@@ -30,21 +30,16 @@ import ru.answer_42.file_storage_service.repository.FileRepository;
 import ru.answer_42.file_storage_service.repository.UserOrderRepository;
 import ru.answer_42.file_storage_service.service.FileService;
 import ru.answer_42.file_storage_service.service.Producer;
+import ru.answer_42.file_storage_service.service.UserOrderService;
 
 @Service
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
 
   private final FileRepository fileRepository;
-  private final UserOrderRepository userOrderRepository;
+  private final UserOrderService userOrderService;
   private final FileMapper fileMapper;
   private final Producer producer;
-
-
-  @Override
-  public UserOrder addFileMetadata(UserOrder userOrder) {
-    return userOrderRepository.save(userOrder);
-  }
 
 
   @Override
@@ -56,8 +51,7 @@ public class FileServiceImpl implements FileService {
   @Override
   @Transactional
   public FileResponseDto save(UUID userId, FileRequestDto fileMetadataRequestDto) {
-    UserOrder userOrder = userOrderRepository.findById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    UserOrder userOrder = userOrderService.findById(userId);
     File file = fileMapper.toEntity(fileMetadataRequestDto);
     file.setUserId(userOrder.getUserId());
     file.setCreatedAt(LocalDate.now());
@@ -78,9 +72,9 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public void updateStatus(UUID id, Status status) {
-    File existingFile = fileRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
+  public void updateStatus(UUID fileId, Status status) {
+    File existingFile = fileRepository.findById(fileId)
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
 
     existingFile.setStatus(status);
 
@@ -105,7 +99,6 @@ public class FileServiceImpl implements FileService {
 
   @Override
   @Transactional
-  @CacheEvict(value = "file:byId", key = "#id")
   public FileResponseDto update(UUID id, FileRequestDto fileMetadataRequestDto) {
 
     File existingFile = fileRepository.findById(id)
