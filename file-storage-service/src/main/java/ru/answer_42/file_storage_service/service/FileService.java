@@ -52,5 +52,4 @@ public interface FileService {
   Type determinateType(MultipartFile file);
 
 
-  UserOrder addFileMetadata(UserOrder userOrder);
 }

@@ -49,10 +49,14 @@ public class FileServiceImpl implements FileService {
 
   private final FileRepository fileRepository;
 <<<<<<< HEAD
+<<<<<<< HEAD
   private final UserOrderService userOrderService;
 =======
   private final UserOrderRepository userOrderRepository;
 >>>>>>> 53ad478 (feat(file-storage): refactor kafka service & add demo redis service)
+=======
+  private final UserOrderService userOrderService;
+>>>>>>> d41d28f (fix(file-storage): fix redis behavior)
   private final FileMapper fileMapper;
   private final Producer producer;
   private final RedisTemplate<String, FileMetadataOrder> redisTemplate;
@@ -63,6 +67,9 @@ public class FileServiceImpl implements FileService {
 
   @Override
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d41d28f (fix(file-storage): fix redis behavior)
   public String createFileOrder(FileOrder fileOrder)
       throws JsonProcessingException {
     return producer.sendMessage(fileOrder);
