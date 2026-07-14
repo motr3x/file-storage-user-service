@@ -6,11 +6,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.answer_42.user_service.dto.UserOrder;
-import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
 import ru.answer_42.user_service.exception.ResourceNotFoundException;
 import ru.answer_42.user_service.mapper.UserMapper;
+import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.model.User;
 import ru.answer_42.user_service.repository.FileOrderRepository;
 import ru.answer_42.user_service.repository.UserRepository;
@@ -68,16 +68,12 @@ public class UserServiceImpl implements UserService {
     return userMapper.toUserResponseDto(user);
   }
 
-  public FileOrder addFileMetadata(FileOrder fileOrder) {
-    return fileOrderRepository.save(fileOrder);
-  }
-
-
   @Override
   public List<FileOrder> findAllFilesByLogin(UUID userId) {
     User user = userRepository.findById(userId).
         orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-    List<FileOrder> fileOrders = fileOrderRepository.findAll().stream().filter(f -> f.getUserId().equals(userId)).toList();
+    List<FileOrder> fileOrders = fileOrderRepository.findAll().stream()
+        .filter(f -> f.getUserId().equals(userId)).toList();
     return fileOrders;
   }
 

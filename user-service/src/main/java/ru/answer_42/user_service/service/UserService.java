@@ -10,8 +10,6 @@ import ru.answer_42.user_service.dto.UserResponseDto;
 
 public interface UserService {
 
-  FileOrder addFileMetadata(FileOrder fileOrder);
-
   List<UserResponseDto> findAll();
 
   UserResponseDto save(UserRequestDto userDto) throws JsonProcessingException;
