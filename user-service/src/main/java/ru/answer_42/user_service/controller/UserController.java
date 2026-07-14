@@ -67,7 +67,7 @@ public class UserController{
   @Tag(name = "get", description = "GET-методы user API")
   @GetMapping("/{userId}/files")
   public ResponseEntity<List<FileOrder>> readAllFiles(@PathVariable UUID userId){
-    List<FileOrder> fileOrders = userService.findAllFilesByLogin(userId);
+    List<FileOrder> fileOrders = userService.findAllFilesById(userId);
     return fileOrders != null ? new ResponseEntity<>(fileOrders, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }

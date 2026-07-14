@@ -2,15 +2,15 @@ spring:
   application:
     name: user-service
   liquibase:
-    enabled: true
+    enabled: false
   datasource:
-    url: jdbc:postgresql://${PGSQL_SERVICE_HOST}:${PGSQL_SERVICE_PORT}/user_db
+    url: jdbc:postgresql://localhost:5430/user_db
     username: postgres
-    password: ${postgres-password}
+    password: password
     driverClassName: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   kafka:
@@ -18,10 +18,10 @@ spring:
       group-id: "default"
 
 server:
-  port: ${SERVICE_PORT}
+  port: 8081
 topic:
-  name: t.file.order
+  name: t.user.order
 
 api:
   server:
-    url: http://${SERVICE_HOST}:${SERVICE_PORT}
+    url: http://localhost:8081

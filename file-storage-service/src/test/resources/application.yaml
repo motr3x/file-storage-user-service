@@ -1,0 +1,26 @@
+spring:
+  liquibase:
+    enabled: false
+  application:
+    name: file-storage-service
+  datasource:
+    url: jdbc:postgresql://${PGSQL_SERVICE_HOST}:${PGSQL_SERVICE_PORT}/file_storage_db
+    username: postgres
+    password: ${postgres-password}
+    driverClassName: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+server:
+  port: 8080
+
+topic:
+  name: t.user.order
+
+api:
+  server:
+    url: http://localhost:8080
+storage:
+  location: http://localhost:8080/api/storage

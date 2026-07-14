@@ -69,7 +69,7 @@ public class UserServiceImpl implements UserService {
   }
 
   @Override
-  public List<FileOrder> findAllFilesByLogin(UUID userId) {
+  public List<FileOrder> findAllFilesById(UUID userId) {
     User user = userRepository.findById(userId).
         orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
     List<FileOrder> fileOrders = fileOrderRepository.findAll().stream()

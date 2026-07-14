@@ -18,7 +18,7 @@ public interface UserService {
 
   UserResponseDto deleteById(UUID id);
 
-  List<FileOrder> findAllFilesByLogin(UUID userId);
+  List<FileOrder> findAllFilesById(UUID userId);
 
    String createUserOrder(UserOrder userOrder) throws JsonProcessingException;
 //  List<FileDownloadDto> findAllLinksByLogin(String login);

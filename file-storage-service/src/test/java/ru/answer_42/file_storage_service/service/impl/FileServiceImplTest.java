@@ -2,6 +2,7 @@ package ru.answer_42.file_storage_service.service.impl;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +38,7 @@ import ru.answer_42.file_storage_service.model.UserOrder;
 import ru.answer_42.file_storage_service.repository.FileRepository;
 import ru.answer_42.file_storage_service.repository.UserOrderRepository;
 import ru.answer_42.file_storage_service.service.Producer;
+import ru.answer_42.file_storage_service.service.UserOrderService;
 
 @ExtendWith(MockitoExtension.class)
 public class FileServiceImplTest {
@@ -46,13 +49,23 @@ public class FileServiceImplTest {
 //  private static final Long DEFAULT_SIZE = 10L;
 //  private static final UUID RANDOM_FILE_ID = UUID.randomUUID();
 //  private static final UUID RANDOM_USER_ID = UUID.randomUUID();
+//  private static final UUID NON_ACCESS_RANDOM_USER_ID = UUID.randomUUID();
 //  private static final Path PATH = Path.of("test");
 //  private static final Type CORRECT_TYPE = Type.DOX;
+//  public final static Long MIN_SIZE = 1L;
+//  public final static Long MAX_SIZE = 15 * 1024 * 1024L;
+//  private static final Long TOO_LARGE_SIZE = MAX_SIZE + 1L;
+//  private static final Boolean VIRUS_FLAG = Boolean.TRUE;
+//  private static final UUID NON_ACCESS_USER_ID = UUID.randomUUID();
+////  private final FileRepository fileRepository;
+////  private final UserOrderService userOrderService;
+////  private final FileMapper fileMapper;
+////  private final Producer producer;
 //
 //  @Mock
 //  private FileRepository fileRepository;
 //  @Mock
-//  private UserOrderRepository userOrderRepository;
+//  private UserOrderService userOrderService;
 //  @Mock
 //  private FileMapper fileMapper;
 //  @Mock
@@ -70,44 +83,17 @@ public class FileServiceImplTest {
 //  private static List<UUID> filesUUID;
 //  private static List<File> files = new ArrayList<>();
 //
-//  @AfterEach
-//  void afterEach() {
-//    verifyNoMoreInteractions(fileRepository, userOrderRepository, fileMapper, producer);
-//  }
-//
-//  @BeforeAll()
-//  static void init() {
-//    filesUUID = List.of(UUID.randomUUID(), UUID.randomUUID());
-//    userOrder = new UserOrder();
-//    userOrder.setLogin(USER_LOGIN);
-//    bytes = new byte[]{1, 3, 1};
-//    fileDto = FileRequestDto.builder()
-//        .title(FILE_TITLE)
-//        .size(DEFAULT_SIZE)
-//        .file(bytes)
-//        .status(Status.UPLOAD.name())
-//        .type(Type.TXT.name())
-//        .userLogin(USER_LOGIN).build();
-//
-//    file = File.builder()
-//        .title(fileDto.getTitle())
-//        .size(fileDto.getSize())
-//        .file(fileDto.getFile())
-//        .status(Status.valueOf(fileDto.getStatus()))
-//        .type(Type.valueOf(fileDto.getType()))
-//        .userLogin(fileDto.getUserLogin()).build();
-//
-//    fileResponseDto = FileResponseDto.builder()
-//        .title(fileDto.getTitle())
-//        .size(fileDto.getSize())
-//        .file(fileDto.getFile())
-//        .status(Status.valueOf(fileDto.getStatus()))
-//        .type(Type.valueOf(fileDto.getType()))
-//        .userLogin(fileDto.getUserLogin())
-//        .createdAt(LocalDate.now())
-//        .updateDate(LocalDate.now()).build();
-//
-//    files = new ArrayList<>(Collections.singletonList(file));
+//  @BeforeEach()
+//  void init() {
+//    when(multipartFile.isEmpty()).thenReturn(!VIRUS_FLAG);
+//    when(multipartFile.getOriginalFilename()).thenReturn(FILE_TITLE);
+//    when(multipartFile.getSize()).thenReturn(MAX_SIZE);
+//    when(fileService.getFileIdByUserIdAndTitle(RANDOM_USER_ID, FILE_TITLE)).thenReturn(RANDOM_FILE_ID);
+//    when(fileResponseDto.getTitle()).thenReturn(FILE_TITLE);
+//    when(file.getFile()).thenReturn(bytes);
+//    when(file.getTitle()).thenReturn(FILE_TITLE);
+//    when(file.getUserId()).thenReturn(RANDOM_USER_ID);
+//    when(fileService.findByPath(any())).thenReturn(file);
 //  }
 //
 //  @Test
@@ -115,14 +101,14 @@ public class FileServiceImplTest {
 //  void thrown_correct_exception_when_user_with_file_not_found() {
 //    //Given
 //    String expectedMessage =
-//        "User with login: " + USER_LOGIN + " not own file with id: " + RANDOM_FILE_ID + " ";
-//    when(fileRepository.findByUserLoginAndId(USER_LOGIN, RANDOM_FILE_ID)).thenReturn(
+//        "User with login: " + RANDOM_USER_ID + " not own file with id: " + RANDOM_FILE_ID + " ";
+//    when(fileRepository.findByUserIdAndId(RANDOM_USER_ID, RANDOM_FILE_ID)).thenReturn(
 //        Optional.empty());
 //
 //    //When
 //    ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class,
 //        () -> {
-//          fileService.findByUserLoginAndId(USER_LOGIN, RANDOM_FILE_ID);
+//          fileService.findByUserIdAndId(RANDOM_USER_ID, RANDOM_FILE_ID);
 //        });
 //
 //    //Then
@@ -153,13 +139,13 @@ public class FileServiceImplTest {
 //  void success_access_check() {
 //
 //    String expectedMessage =
-//        "User with login: " + NON_ACCESS_USER_LOGIN + " hasn't access to file: " + FILE_TITLE;
+//        "User with id: " + NON_ACCESS_RANDOM_USER_ID + " hasn't access to file: " + FILE_TITLE;
 //
-//    fileService.accessCheck(USER_LOGIN, fileResponseDto);
+//    fileService.accessCheck(RANDOM_USER_ID, fileResponseDto);
 //    //When
 //    AccessDeniedException thrown = assertThrows(AccessDeniedException.class,
 //        () -> {
-//          fileService.accessCheck(NON_ACCESS_USER_LOGIN, fileResponseDto);
+//          fileService.accessCheck(NON_ACCESS_RANDOM_USER_ID, fileResponseDto);
 //        });
 //
 //    String actualMessage = thrown.getMessage();
@@ -213,21 +199,19 @@ public class FileServiceImplTest {
 //  void success_save_file_with_correct_fields() {
 //    //Given
 //    var captor = ArgumentCaptor.forClass(File.class);
-//    when(userOrderRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.of(userOrder));
+//    when(userOrderRepository.findById(RANDOM_USER_ID)).thenReturn(Optional.of(userOrder));
 //    when(fileMapper.toEntity(fileDto)).thenReturn(file);
 //    when(fileRepository.save(captor.capture())).thenReturn(file);
 //    when(fileMapper.toFileResponseDto(file)).thenReturn(fileResponseDto);
 //
-//    file.setUserOrder(userOrder);
 //    file.setCreatedAt(LocalDate.now());
 //    file.setUpdateDate(LocalDate.now());
 //
 //    //When
-//    fileService.save(USER_LOGIN, fileDto);
+//    fileService.save(RANDOM_USER_ID, fileDto);
 //
 //    //Then
 //    assertThat(file).isEqualTo(captor.getValue());
-//    verify(userOrderRepository, times(1)).findByLogin(USER_LOGIN);
 //    verify(fileRepository, times(1)).save(captor.getValue());
 //  }
 //
@@ -235,20 +219,20 @@ public class FileServiceImplTest {
 //  @DisplayName("Не сохраняет файл для пользователя, которого не существует и выкидывает исключение.")
 //  void cannot_save_file_with_unknown_user_throw_exception() {
 //    //Given
-//    String expectedMessage = "User not found with login: " + USER_LOGIN;
+//    String expectedMessage = "User not found with login: " + RANDOM_USER_ID;
 //    FileRequestDto fileMetadataRequestDto = new FileRequestDto();
-//    when(userOrderRepository.findByLogin(USER_LOGIN)).thenReturn(Optional.empty());
+//    when(userOrderRepository.findById(RANDOM_USER_ID)).thenReturn(Optional.empty());
 //
 //    //When
 //    ResourceNotFoundException thrown = assertThrows(ResourceNotFoundException.class, () -> {
-//      fileService.save(USER_LOGIN, fileMetadataRequestDto);
+//      fileService.save(RANDOM_USER_ID, fileMetadataRequestDto);
 //    });
 //
 //    //Then
 //    String actualMessage = thrown.getMessage();
 //    assertThat(actualMessage).isEqualTo(expectedMessage);
 //    verify(userOrderRepository, times(1))
-//        .findByLogin(USER_LOGIN);
+//        .findById(RANDOM_USER_ID);
 //  }
 //
 //  @Test
