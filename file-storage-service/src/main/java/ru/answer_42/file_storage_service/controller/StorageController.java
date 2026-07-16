@@ -68,7 +68,7 @@ public class StorageController {
   @PostMapping("/{userId}/upload")
   public ResponseEntity<FileResponseDto> handleFileUpload(
       @Parameter(
-          description = "Логин пользователя, который сохраняет файл в хранилище",
+          description = "Id пользователя, который сохраняет файл в хранилище",
           required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
           description = "Файл, который сохраняется в хранилище",
@@ -92,7 +92,7 @@ public class StorageController {
   @GetMapping("/{userId}/{filename:.+}")
   public ResponseEntity<Resource> serveFile(
       @Parameter(
-        description = "Логин пользователя, который запрашивает файл из хранилища",
+        description = "Id пользователя, который запрашивает файл из хранилища",
         required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
         description = "Имя файла, который запрашивают",
@@ -122,7 +122,7 @@ public class StorageController {
   @PostMapping("/{userId}")
   public ResponseEntity<Resource> serveFiles(
       @Parameter(
-          description = "Логин пользователя, который сохраняет архив файлов в хранилище",
+          description = "Id пользователя, который сохраняет архив файлов в хранилище",
           required = true) @PathVariable @NotNull UUID userId,
       @Parameter(
           description = "Список с id файлов, которые пользователь желает сохранить",

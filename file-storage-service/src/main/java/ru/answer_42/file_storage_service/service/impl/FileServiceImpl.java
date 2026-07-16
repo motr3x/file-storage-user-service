@@ -59,7 +59,7 @@ public class FileServiceImpl implements FileService {
     return fileMapper.toFileResponseDto(fileRepository.save(file));
   }
 
-  public List<FileResponseDto> findAll(UUID userId, String name, LocalDate start,
+  public List<FileResponseDto> findAllByFilter(UUID userId, String name, LocalDate start,
       LocalDate end, Type type) {
     String toType = null;
     if(!(type == null)){

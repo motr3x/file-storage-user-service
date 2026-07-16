@@ -55,7 +55,7 @@ public class FileMetadataController {
   @PostMapping("/{userId}")
   public ResponseEntity<FileResponseDto> create(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому сохраняются",
+          description = "Id пользователя, метаданными о файле по которому сохраняются",
           required = true)
       @PathVariable @NotNull UUID userId,
       @Parameter(
@@ -80,7 +80,7 @@ public class FileMetadataController {
   @GetMapping("/{userId}/{fileId}")
   public ResponseEntity<FileResponseDto> readById(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому сохраняются",
+          description = "Id пользователя, метаданными о файле по которому сохраняются",
           required = true)
       @PathVariable @NotNull UUID userId,
       @Parameter(
@@ -106,7 +106,7 @@ public class FileMetadataController {
   @PutMapping("/{userId}/{fileId}")
   public ResponseEntity<FileResponseDto> update(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому обновляются",
+          description = "Id пользователя, метаданными о файле по которому обновляются",
           required = true)
       @PathVariable @NotNull UUID userId,
       @Parameter(
@@ -137,7 +137,7 @@ public class FileMetadataController {
   @DeleteMapping("/{userId}/{fileId}")
   public ResponseEntity<FileResponseDto> delete(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому удаляются",
+          description = "Id пользователя, метаданными о файле по которому удаляются",
           required = true)
       @PathVariable @NotNull UUID userId,
       @Parameter(
@@ -162,9 +162,9 @@ public class FileMetadataController {
   @Operation(summary = "Получить названия всех файлов", description = "В ответе возвращается список названий файлов")
   @Tag(name = "get", description = "GET-методы file API")
   @GetMapping("/{userId}/titles")
-  public ResponseEntity<List<String>> readTitles(
+  public ResponseEntity<List<String>> getTitles(
       @Parameter(
-          description = "Логин пользователя, метаданными о файле по которому запрашиваются",
+          description = "Id пользователя, метаданными о файле по которому запрашиваются",
           required = true)
       @PathVariable @NotNull UUID userId
   ) {
@@ -186,9 +186,9 @@ public class FileMetadataController {
   @Operation(summary = "Получить метаданные о файлах с возможностью фильтрации", description = "В ответе возвращается список метаданными о файлах, прошедших фильтр ")
   @Tag(name = "get", description = "GET-методы file API")
   @GetMapping("/user/{userId}")
-  public ResponseEntity<List<FileResponseDto>> readAll(
+  public ResponseEntity<List<FileResponseDto>> getUserFilesByFilter(
       @Parameter(
-          description = "Логин пользователя, данные о файле по которому запрашиваются",
+          description = "Id пользователя, данные о файле по которому запрашиваются",
           required = true)
       @PathVariable @NotNull UUID userId,
       @Parameter(
@@ -207,7 +207,7 @@ public class FileMetadataController {
           description = "Фильтр по типу (без указания - все, при указании - список переданных типов)",
           required = false)
       @RequestParam(required = false) Type type) {
-    final List<FileResponseDto> files = fileService.findAll(userId, name, start, end, type);
+    final List<FileResponseDto> files = fileService.findAllByFilter(userId, name, start, end, type);
     return files != null ? new ResponseEntity<>(files, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }

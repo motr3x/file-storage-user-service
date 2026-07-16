@@ -29,7 +29,7 @@ public interface FileService {
 
   List<String> findAllTitles(UUID userId);
 
-  List<FileResponseDto> findAll(UUID userId, String name, LocalDate start, LocalDate end,
+  List<FileResponseDto> findAllByFilter(UUID userId, String name, LocalDate start, LocalDate end,
       Type type);
 
   String createFileOrder(FileOrder fileOrder)

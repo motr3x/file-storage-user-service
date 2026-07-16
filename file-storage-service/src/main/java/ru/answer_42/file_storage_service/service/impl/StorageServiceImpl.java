@@ -1,5 +1,6 @@
 package ru.answer_42.file_storage_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -36,6 +38,7 @@ import ru.answer_42.file_storage_service.service.FileService;
 import ru.answer_42.file_storage_service.service.StorageService;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
 
   public final static long MIN_SIZE = 1L;
@@ -61,43 +64,42 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public FileResponseDto store(UUID userId, MultipartFile file) {
     Executor executor = Executors.newFixedThreadPool(10);
-    try {
-      if (file.isEmpty()) {
-        throw new FileIsEmptyException("Failed to store empty file.");
-      }
-      Path destinationFile = this.rootLocation.resolve(
-              userId.toString()).resolve(Paths.get(file.getOriginalFilename()))
-          .normalize();
-      if (file.getSize() > MAX_SIZE) {
-        throw new FileSizeLimitExceededException("File is too large");
-      }
+    if (file.isEmpty()) {
+      throw new FileIsEmptyException("Failed to store empty file.");
+    }
+    Path destinationFile = this.rootLocation.resolve(
+            userId.toString()).resolve(Paths.get(file.getOriginalFilename()))
+        .normalize();
+    if (file.getSize() > MAX_SIZE) {
+      throw new FileSizeLimitExceededException("File is too large");
+    }
 
-      FileResponseDto fileEntity = fileService.multipartFileToFileResponseDto(userId, file,
-          destinationFile);
-      FileResponseDto fileResponseDto = fileService.save(userId,
-          fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
-      UUID fileId = fileService.getFileIdByUserIdAndTitle(userId, fileResponseDto.getTitle());
-      CompletableFuture future = CompletableFuture.runAsync(() -> {
-        fileService.updateStatus(fileId, Status.IN_PROCESS);
-        if (!antivirusService.scan(file)) {
-          throw new RuntimeException();
-        }
-      }, executor).exceptionally(ex -> {
-        fileService.deleteById(fileId);
+    FileResponseDto fileEntity = fileService.multipartFileToFileResponseDto(userId, file,
+        destinationFile);
+    FileResponseDto fileResponseDto = fileService.save(userId,
+        fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
+    UUID fileId = fileService.getFileIdByUserIdAndTitle(userId, fileResponseDto.getTitle());
+    CompletableFuture.runAsync(() -> {
+      fileService.updateStatus(fileId, Status.IN_PROCESS);
+      if (!antivirusService.scan(file)) {
         throw new FileHasVirusException("File: " + file.getOriginalFilename() + " - has a virus");
-      }).thenRunAsync(() -> {
-        fileService.updateStatus(fileId, Status.READY);
-      }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
-      future.join();
+      }
+    }, executor).exceptionally(ex -> {
+      fileService.updateStatus(fileId, Status.HAS_A_VIRUS);
+      throw new StorageStoreFailedException("Store failed");
+    }).thenRunAsync(() -> {
+      fileService.updateStatus(fileId, Status.READY);
       fileEntity.setStatus(Status.READY);
       FileOrder fileOrder =  fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity);
       fileOrder.setUserId(userId);
       fileOrder.setId(fileId);
-      fileService.createFileOrder(fileOrder);
-      return fileEntity;
-    } catch (IOException e) {
-      throw new StorageStoreFailedException("Failed to store file.");
-    }
+      try {
+        fileService.createFileOrder(fileOrder);
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
+    return fileEntity;
   }
 
   @Override
@@ -111,16 +113,14 @@ public class StorageServiceImpl implements StorageService {
       for (FileResponseDto file : desiredFiles) {
         ZipEntry entry1 = new ZipEntry(file.getTitle());
         zout.putNextEntry(entry1);
-        // считываем содержимое файла в массив byte
-        byte[] buffer = file.getFile();
         // добавляем содержимое к архиву
-        zout.write(buffer);
+        zout.write(file.getFile());
         // закрываем текущую запись для новой записи
         zout.closeEntry();
 
       }
     } catch (Exception ex) {
-      System.out.println(ex.getMessage());
+      log.info(ex.getMessage());
     }
     ByteArrayResource byteArrayResource = new ByteArrayResource(baos.toByteArray());
     return byteArrayResource;
