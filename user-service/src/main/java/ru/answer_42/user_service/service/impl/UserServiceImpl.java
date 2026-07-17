@@ -3,11 +3,16 @@ package ru.answer_42.user_service.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import ru.answer_42.user_service.dto.FileDownloadDto;
 import ru.answer_42.user_service.dto.UserOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
+import ru.answer_42.user_service.exception.AccessDeniedException;
+import ru.answer_42.user_service.exception.FileSizeLimitExceededException;
 import ru.answer_42.user_service.exception.ResourceNotFoundException;
 import ru.answer_42.user_service.mapper.UserMapper;
 import ru.answer_42.user_service.model.FileOrder;
@@ -20,6 +25,7 @@ import ru.answer_42.user_service.service.UserService;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;

@@ -11,6 +11,6 @@ public class AntivirusServiceImpl implements AntivirusService {
 
   @Override
   public boolean scan(MultipartFile file) {
-    return false;
+    return true;
   }
 }

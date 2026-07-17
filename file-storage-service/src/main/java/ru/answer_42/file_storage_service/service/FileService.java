@@ -2,10 +2,12 @@ package ru.answer_42.file_storage_service.service;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.validation.constraints.NotNull;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.multipart.MultipartFile;
 import ru.answer_42.file_storage_service.dto.FileOrder;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
@@ -13,9 +15,10 @@ import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.model.File;
 import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
-import ru.answer_42.file_storage_service.model.UserOrder;
 
 public interface FileService {
+
+  String getFileUrl(UUID userId, UUID fileId);
 
   boolean accessCheck(UUID userId, FileResponseDto responseDto);
 
@@ -37,8 +40,7 @@ public interface FileService {
 
   FileResponseDto findByTitle(String name);
 
-  FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file,
-      Path path);
+  FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file);
 
   FileResponseDto findByUserIdAndId(UUID userId, UUID id);
 
@@ -50,4 +52,9 @@ public interface FileService {
 
   Type determinateType(MultipartFile file);
 
+  FileResponseDto setUpDownloadUrl(UUID fileId, Path destinationFile);
+
+  Long getFileSize(UUID userId, UUID fileId);
+
+  Boolean ownerCheck(UUID userId, UUID fileId);
 }

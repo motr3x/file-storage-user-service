@@ -2,11 +2,19 @@ package ru.answer_42.user_service.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +26,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.answer_42.user_service.dto.FileDownloadDto;
 import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
+import ru.answer_42.user_service.service.FileDownloadService;
 import ru.answer_42.user_service.service.UserService;
 
 @RestController
@@ -28,6 +38,31 @@ import ru.answer_42.user_service.service.UserService;
 @RequiredArgsConstructor
 public class UserController{
   private final UserService userService;
+  private final FileDownloadService fileDownloadService;
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Метаданные файла для скачивания получены",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = FileDownloadDto.class))})})
+  @Operation(
+      summary = "Получить метаданные файла для скачивания",
+      description = "В ответе возвращается метаданные файла для скачивания")
+  @GetMapping("/downloadUrl/{userId}/{fileId}")
+  public ResponseEntity<FileDownloadDto> getFileDownloadDto(
+      @Parameter(
+          description = "Id пользователя, метаданные файла которого получаются",
+          required = true)
+      @PathVariable @NotNull UUID userId,
+      @Parameter(
+          description = "Id файла, метаданные которого получаются",
+          required = true)
+      @PathVariable @NotNull UUID fileId){
+    CompletableFuture<FileDownloadDto> future = fileDownloadService.getFileDownloadDto(userId, fileId);
+    try {
+      return ResponseEntity.ok(future.get(10, TimeUnit.SECONDS));
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
   @ApiResponses({
       @ApiResponse(responseCode = "201", description = "Пользователь успешно создан"),

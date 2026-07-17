@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
+import ru.answer_42.file_storage_service.exception.Response;
 import ru.answer_42.file_storage_service.model.Type;
 import ru.answer_42.file_storage_service.service.FileService;
 
@@ -42,6 +43,38 @@ public class FileMetadataController {
   //400 - неправильные данные
 
   private final FileService fileService;
+
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Ссылка скачивания успешно получена",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = String.class))})})
+  @Operation(
+      summary = "Получить ссылку на скачивание",
+      description = "В ответе возвращается ссылка на скачивание")
+  @GetMapping("/downloadUrl/{userId}/{fileId}")
+  public ResponseEntity<String> getDownloadUrl(
+      @Parameter(
+          description = "Id пользователя, ссылка на скачивание файла которого получаются",
+          required = true)
+      @PathVariable @NotNull UUID userId,
+      @Parameter(
+          description = "Id файла, ссылка на скачивание которого получается",
+          required = true)
+      @PathVariable @NotNull UUID fileId){
+    return ResponseEntity.ok(fileService.getFileUrl(userId, fileId));
+  }
+
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Размер файла успешно получен",
+          content = {@Content(mediaType = "application/json",
+              schema = @Schema(implementation = Long.class))})})
+  @Operation(
+      summary = "Получить размер файла",
+      description = "В ответе возвращается размер файла")
+  @GetMapping("/fileSize/{userId}/{fileId}")
+  public ResponseEntity<Long> getFileSize(@PathVariable @NotNull UUID userId, @PathVariable @NotNull UUID fileId){
+    return ResponseEntity.ok(fileService.getFileSize(userId, fileId));
+  }
 
   //TODO
   // После валидации дтошки дописать документацию по исключениям связанных с валидацией

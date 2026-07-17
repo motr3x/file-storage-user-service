@@ -10,5 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FileDownloadDto {
+  private String fileName;
+  private Long size;
   private String downloadUrl;
 }

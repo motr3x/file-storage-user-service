@@ -9,6 +9,7 @@ import ru.answer_42.file_storage_service.dto.FileOrder;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.model.File;
+import ru.answer_42.file_storage_service.model.RemovedFiles;
 
 @Mapper(
     componentModel = "spring",
@@ -31,6 +32,8 @@ public interface FileMapper {
       FileResponseDto fileResponseDto);
 
   File toEntity(FileRequestDto fileDto);
+
+  RemovedFiles toRemovedFileFromEntity(File file);
 
   void updateEntityFromDto(FileRequestDto fileDto, @MappingTarget File file);
 }

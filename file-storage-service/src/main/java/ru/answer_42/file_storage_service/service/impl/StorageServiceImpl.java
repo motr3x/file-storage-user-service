@@ -16,6 +16,7 @@ import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,12 @@ import ru.answer_42.file_storage_service.exception.storage.StorageLocationEmptyE
 import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedException;
 import ru.answer_42.file_storage_service.mapper.FileMapper;
 import ru.answer_42.file_storage_service.model.File;
+import ru.answer_42.file_storage_service.model.RemovedFiles;
 import ru.answer_42.file_storage_service.model.Status;
+import ru.answer_42.file_storage_service.repository.FileRepository;
 import ru.answer_42.file_storage_service.service.AntivirusService;
 import ru.answer_42.file_storage_service.service.FileService;
+import ru.answer_42.file_storage_service.service.RemovedFilesService;
 import ru.answer_42.file_storage_service.service.StorageService;
 
 @Service
@@ -42,18 +46,27 @@ import ru.answer_42.file_storage_service.service.StorageService;
 public class StorageServiceImpl implements StorageService {
 
   public final static long MIN_SIZE = 1L;
-  public final static long MAX_SIZE = 15 * 1024 * 1024L;
+  public final static long MAX_SIZE = 15 * 1024 * 1024;
   private final Path rootLocation;
   private final FileService fileService;
   private final AntivirusService antivirusService;
   private final FileMapper fileMapper;
+  private final RemovedFilesService removedFilesService;
+
+  @Autowired
+  @Qualifier("commonExecutor")
+  private Executor executor;
+  @Autowired
+  private FileRepository fileRepository;
 
   @Autowired
   public StorageServiceImpl(StorageProperties properties, FileService fileService,
-      AntivirusService antivirusService, FileMapper fileMapper) {
+      AntivirusService antivirusService, FileMapper fileMapper,
+      RemovedFilesService removedFilesService) {
     if (properties.getLocation().trim().isEmpty()) {
       throw new StorageLocationEmptyException("File upload location can not be Empty.");
     }
+    this.removedFilesService = removedFilesService;
     this.rootLocation = Paths.get(properties.getLocation());
     this.fileService = fileService;
     this.antivirusService = antivirusService;
@@ -63,33 +76,44 @@ public class StorageServiceImpl implements StorageService {
 
   @Override
   public FileResponseDto store(UUID userId, MultipartFile file) {
-    Executor executor = Executors.newFixedThreadPool(10);
+
     if (file.isEmpty()) {
       throw new FileIsEmptyException("Failed to store empty file.");
     }
     Path destinationFile = this.rootLocation.resolve(
-            userId.toString()).resolve(Paths.get(file.getOriginalFilename()))
-        .normalize();
+            userId.toString()).normalize();
     if (file.getSize() > MAX_SIZE) {
       throw new FileSizeLimitExceededException("File is too large");
     }
 
-    FileResponseDto fileEntity = fileService.multipartFileToFileResponseDto(userId, file,
-        destinationFile);
+    FileResponseDto fileEntity = fileService.multipartFileToFileResponseDto(userId, file);
     FileResponseDto fileResponseDto = fileService.save(userId,
         fileMapper.toFileRequestDtoFromFileResponseDto(fileEntity));
     UUID fileId = fileService.getFileIdByUserIdAndTitle(userId, fileResponseDto.getTitle());
+    fileResponseDto = fileService.setUpDownloadUrl(fileId, destinationFile);
+    FileResponseDto finalFileResponseDto = fileResponseDto;
     CompletableFuture.runAsync(() -> {
       fileService.updateStatus(fileId, Status.IN_PROCESS);
       if (!antivirusService.scan(file)) {
         throw new FileHasVirusException("File: " + file.getOriginalFilename() + " - has a virus");
       }
-    }, executor).exceptionally(ex -> {
-      fileService.updateStatus(fileId, Status.HAS_A_VIRUS);
-      throw new StorageStoreFailedException("Store failed");
-    }).thenRunAsync(() -> {
+    }, executor).handle((result, ex) -> {
+      if(ex != null){
+        removedFilesService.save(new RemovedFiles(fileId, finalFileResponseDto.getTitle()));
+        fileService.deleteById(fileId);
+        fileService.updateStatus(fileId, Status.HAS_A_VIRUS);
+        log.error("Virus detected", ex);
+        return Status.HAS_A_VIRUS;
+      }
+      else {
+        return Status.IN_PROCESS;
+      }
+    }).thenAcceptAsync(status -> {
+      if (status == Status.HAS_A_VIRUS) {
+        return;
+      }
       fileService.updateStatus(fileId, Status.READY);
-      fileEntity.setStatus(Status.READY);
+      finalFileResponseDto.setStatus(Status.READY);
       FileOrder fileOrder =  fileMapper.toFileMetadataOrderFromFileResponseDto(fileEntity);
       fileOrder.setUserId(userId);
       fileOrder.setId(fileId);
@@ -98,13 +122,12 @@ public class StorageServiceImpl implements StorageService {
       } catch (JsonProcessingException e) {
         throw new RuntimeException(e);
       }
-    }, CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS, executor));
+    }, CompletableFuture.delayedExecutor(15, TimeUnit.SECONDS, executor));
     return fileEntity;
   }
 
   @Override
   public Resource loadAll(UUID userId, List<UUID> fileNames) {
-    Executor executor = Executors.newFixedThreadPool(10);
     CompletableFuture<List<FileResponseDto>> futures = CompletableFuture.supplyAsync(
         () -> fileService.findByUserIdAndFilesId(userId, fileNames), executor);
     List<FileResponseDto> desiredFiles = futures.join();
