@@ -56,5 +56,4 @@ public interface FileService {
 
   Long getFileSize(UUID userId, UUID fileId);
 
-  Boolean ownerCheck(UUID userId, UUID fileId);
 }

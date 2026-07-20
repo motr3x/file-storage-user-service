@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.answer_42.user_service.dto.FileDownloadDto;
+import ru.answer_42.user_service.exception.TimeLimitException;
 import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
@@ -59,8 +60,8 @@ public class UserController{
     CompletableFuture<FileDownloadDto> future = fileDownloadService.getFileDownloadDto(userId, fileId);
     try {
       return ResponseEntity.ok(future.get(10, TimeUnit.SECONDS));
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      throw new TimeLimitException("The waiting time is over");
     }
   }
 

@@ -39,15 +39,6 @@ public class FileServiceImpl implements FileService {
   private final Producer producer;
 
   @Override
-  public Boolean ownerCheck(UUID userId, UUID fileId) {
-    File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
-    if(file.getUserId().equals(userId)){
-      return Boolean.TRUE;
-    }
-    return Boolean.FALSE;
-  }
-
-  @Override
   public Long getFileSize(UUID userId, UUID fileId) {
     File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
     if(file.getUserId().equals(userId)){
