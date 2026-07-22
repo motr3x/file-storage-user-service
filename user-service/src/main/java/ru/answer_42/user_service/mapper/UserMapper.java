@@ -4,7 +4,9 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.mapstruct.ReportingPolicy;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import ru.answer_42.user_service.dto.UserDetailsDto;
 import ru.answer_42.user_service.dto.UserOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
@@ -24,4 +26,5 @@ public interface UserMapper {
   User toEntity(UserRequestDto userDto);
   void updateEntityFromDto(UserRequestDto userDto, @MappingTarget User user);
   UserOrder fromEntityToUserOrder(User user);
+  UserDetailsDto fromEntityToUserDetailsDto(User user);
 }

@@ -69,7 +69,7 @@ public class UserController{
       @ApiResponse(responseCode = "201", description = "Пользователь успешно создан"),
   })
   @Operation(summary = "Создать пользователя", description = "В ответе возвращается созданный пользователь")
-  @PostMapping
+  @PostMapping("/create")
   public ResponseEntity<UserResponseDto> create(@RequestBody UserRequestDto userRequestDto)
       throws JsonProcessingException {
     UserResponseDto userResponseDto = userService.save(userRequestDto);
