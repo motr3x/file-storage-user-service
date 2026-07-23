@@ -86,8 +86,7 @@ class StorageServiceImplTest {
     Path destinationFile = this.rootLocation.resolve(
             USER_LOGIN).resolve(Paths.get(FILE_TITLE))
         .normalize();
-    when(fileService.multipartFileToFileResponseDto(RANDOM_USER_ID, multipartFile,
-        destinationFile)).thenReturn(fileResponseDto);
+    when(fileService.multipartFileToFileResponseDto(RANDOM_USER_ID, multipartFile)).thenReturn(fileResponseDto);
     when(fileMapper.toFileRequestDtoFromFileResponseDto(fileResponseDto)).thenReturn(
         fileRequestDto);
     when(fileService.save(RANDOM_USER_ID, fileRequestDto)).thenReturn(fileResponseDto);

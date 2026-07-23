@@ -7,8 +7,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +25,6 @@ import ru.answer_42.file_storage_service.model.Status;
 import ru.answer_42.file_storage_service.model.Type;
 import ru.answer_42.file_storage_service.model.UserOrder;
 import ru.answer_42.file_storage_service.repository.FileRepository;
-import ru.answer_42.file_storage_service.repository.UserOrderRepository;
 import ru.answer_42.file_storage_service.service.FileService;
 import ru.answer_42.file_storage_service.service.Producer;
 import ru.answer_42.file_storage_service.service.UserOrderService;
@@ -41,6 +38,32 @@ public class FileServiceImpl implements FileService {
   private final FileMapper fileMapper;
   private final Producer producer;
 
+  @Override
+  public Boolean ownerCheck(UUID userId, UUID fileId) {
+    File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
+    if(file.getUserId().equals(userId)){
+      return Boolean.TRUE;
+    }
+    return Boolean.FALSE;
+  }
+
+  @Override
+  public Long getFileSize(UUID userId, UUID fileId) {
+    File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
+    if(file.getUserId().equals(userId)){
+      return file.getSize();
+    }
+    throw new AccessDeniedException("User with id: " + userId + " hasn't access to file: " + fileId);
+  }
+
+  @Override
+  public String getFileUrl(UUID userId, UUID fileId) {
+    File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
+    if(file.getUserId().equals(userId)){
+      return file.getDownloadUrl();
+    }
+    throw new AccessDeniedException("User with id: " + userId + " hasn't access to file: " + fileId);
+  }
 
   @Override
   public String createFileOrder(FileOrder fileOrder)
@@ -59,7 +82,7 @@ public class FileServiceImpl implements FileService {
     return fileMapper.toFileResponseDto(fileRepository.save(file));
   }
 
-  public List<FileResponseDto> findAll(UUID userId, String name, LocalDate start,
+  public List<FileResponseDto> findAllByFilter(UUID userId, String name, LocalDate start,
       LocalDate end, Type type) {
     String toType = null;
     if(!(type == null)){
@@ -148,8 +171,7 @@ public class FileServiceImpl implements FileService {
   }
 
   @Override
-  public FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file,
-      Path destinationFile) {
+  public FileResponseDto multipartFileToFileResponseDto(UUID userId, MultipartFile file) {
     FileResponseDtoBuilder fileMetadataBuilder = FileResponseDto.builder();
     try {
       fileMetadataBuilder.file(file.getBytes());
@@ -159,7 +181,6 @@ public class FileServiceImpl implements FileService {
     }
     fileMetadataBuilder
         .size(file.getSize())
-        .downloadUrl(destinationFile.toString())
         .type(determinateType(file))
         .title(file.getOriginalFilename())
         .status(Status.UPLOAD)
@@ -187,5 +208,14 @@ public class FileServiceImpl implements FileService {
     } catch (IllegalArgumentException e) {
       throw new UnsupportedFileTypeException(fileType);
     }
+  }
+
+  @Override
+  public FileResponseDto setUpDownloadUrl(UUID fileId, Path destinationFile) {
+    File existingFile = fileRepository.findById(fileId)
+        .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
+    existingFile.setDownloadUrl(destinationFile.resolve(fileId.toString()).toString());
+    existingFile = fileRepository.save(existingFile);
+    return fileMapper.toFileResponseDto(existingFile);
   }
 }
