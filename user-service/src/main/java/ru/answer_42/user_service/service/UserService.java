@@ -25,5 +25,4 @@ public interface UserService {
 
    String createUserOrder(UserOrder userOrder) throws JsonProcessingException;
 
-  UserDetailsDto findByLogin(String login);
 }

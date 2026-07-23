@@ -18,9 +18,11 @@ public class TokenCookieSessionAuthenticationStrategy implements SessionAuthenti
 
   private Function<Authentication, Token> tokenCookieFactory = new DefaultTokenCookieFactory();
 
+  // По дефолту просто перевод токена в строку, но в application переопределён
   private Function<Token, String> tokenStringSerializer = Objects::toString;
 
 
+  // Действия, которые происходят при удачной аутентификации
   @Override
   public void onAuthentication(Authentication authentication, HttpServletRequest request,
       HttpServletResponse response) throws SessionAuthenticationException {
@@ -38,9 +40,10 @@ public class TokenCookieSessionAuthenticationStrategy implements SessionAuthenti
       cookie.setPath("/");
       cookie.setDomain(null);
       cookie.setSecure(true);
+      //Только сервер имеет доступ к куке
       cookie.setHttpOnly(true);
+      //Время хранение куки
       cookie.setMaxAge((int) ChronoUnit.SECONDS.between(Instant.now(), token.expiresAt()));
-
       response.addCookie(cookie);
     }
 

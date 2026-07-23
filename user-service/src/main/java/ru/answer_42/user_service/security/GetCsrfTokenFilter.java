@@ -26,6 +26,7 @@ public class GetCsrfTokenFilter extends OncePerRequestFilter {
 
   private ObjectMapper objectMapper = new ObjectMapper();
 
+  //Фильтр, который возвращает CSRF токен
   @Override
   protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {

@@ -18,6 +18,9 @@ import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +34,7 @@ import ru.answer_42.user_service.exception.TimeLimitException;
 import ru.answer_42.user_service.model.FileOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
+import ru.answer_42.user_service.model.User;
 import ru.answer_42.user_service.service.FileDownloadService;
 import ru.answer_42.user_service.service.UserService;
 
@@ -40,6 +44,7 @@ import ru.answer_42.user_service.service.UserService;
 public class UserController{
   private final UserService userService;
   private final FileDownloadService fileDownloadService;
+
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Метаданные файла для скачивания получены",
           content = {@Content(mediaType = "application/json",
@@ -47,17 +52,15 @@ public class UserController{
   @Operation(
       summary = "Получить метаданные файла для скачивания",
       description = "В ответе возвращается метаданные файла для скачивания")
-  @GetMapping("/downloadUrl/{userId}/{fileId}")
+  @GetMapping("/downloadUrl/{fileId}")
   public ResponseEntity<FileDownloadDto> getFileDownloadDto(
-      @Parameter(
-          description = "Id пользователя, метаданные файла которого получаются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
       @Parameter(
           description = "Id файла, метаданные которого получаются",
           required = true)
-      @PathVariable @NotNull UUID fileId){
-    CompletableFuture<FileDownloadDto> future = fileDownloadService.getFileDownloadDto(userId, fileId);
+      @PathVariable @NotNull UUID fileId,
+
+      @AuthenticationPrincipal User user){
+    CompletableFuture<FileDownloadDto> future = fileDownloadService.getFileDownloadDto(user.getUserId(), fileId);
     try {
       return ResponseEntity.ok(future.get(10, TimeUnit.SECONDS));
     } catch (Exception e) {
@@ -70,7 +73,11 @@ public class UserController{
   })
   @Operation(summary = "Создать пользователя", description = "В ответе возвращается созданный пользователь")
   @PostMapping("/create")
-  public ResponseEntity<UserResponseDto> create(@RequestBody UserRequestDto userRequestDto)
+  public ResponseEntity<UserResponseDto> create(
+      @Parameter(
+          description = "Юзер с полями, которые нужно обновить",
+          required = true)
+      @RequestBody UserRequestDto userRequestDto)
       throws JsonProcessingException {
     UserResponseDto userResponseDto = userService.save(userRequestDto);
     return new ResponseEntity<>(userResponseDto, HttpStatus.CREATED);
@@ -101,9 +108,9 @@ public class UserController{
   })
   @Operation(summary = "Получить список файлов пользователя", description = "В ответе возвращается список файлов пользователя")
   @Tag(name = "get", description = "GET-методы user API")
-  @GetMapping("/{userId}/files")
-  public ResponseEntity<List<FileOrder>> readAllFiles(@PathVariable UUID userId){
-    List<FileOrder> fileOrders = userService.findAllFilesById(userId);
+  @GetMapping("/files")
+  public ResponseEntity<List<FileOrder>> readAllFiles(@AuthenticationPrincipal User user){
+    List<FileOrder> fileOrders = userService.findAllFilesById(user.getUserId());
     return fileOrders != null ? new ResponseEntity<>(fileOrders, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);
   }
@@ -127,9 +134,9 @@ public class UserController{
       @ApiResponse(responseCode = "404", description = "Пользователей нет")
   })
   @Operation(summary = "Обновить данные пользователя", description = "В ответе возвращается обновленный пользователь")
-  @PutMapping("/{userId}")
-  public ResponseEntity<UserResponseDto> update(@PathVariable UUID userId, @RequestBody UserRequestDto fileRequestDto){
-    UserResponseDto userResponseDto = userService.update(userId, fileRequestDto);
+  @PutMapping()
+  public ResponseEntity<UserResponseDto> update(@AuthenticationPrincipal User user, @RequestBody UserRequestDto fileRequestDto){
+    UserResponseDto userResponseDto = userService.update(user.getUserId(), fileRequestDto);
     return new ResponseEntity<>(userResponseDto, HttpStatus.OK);
   }
 
@@ -139,7 +146,7 @@ public class UserController{
   })
   @Operation(summary = "Пользователь удален", description = "В ответе возвращается удаленный пользователь")
   @DeleteMapping("/{userId}")
-  public ResponseEntity<UserResponseDto> delete(@PathVariable UUID userId){
+  public ResponseEntity<UserResponseDto> delete(@PathVariable @NotNull UUID userId){
     UserResponseDto userResponseDto = userService.deleteById(userId);
     return new ResponseEntity<>(userResponseDto, HttpStatus.OK);
   }

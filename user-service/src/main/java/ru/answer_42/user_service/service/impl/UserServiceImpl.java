@@ -34,13 +34,6 @@ public class UserServiceImpl implements UserService {
   private final FileOrderRepository fileOrderRepository;
 
   @Override
-  public UserDetailsDto findByLogin(String login) {
-    User user = userRepository.findByLogin(login).
-        orElseThrow(() -> new ResourceNotFoundException("User not found with login: " + login));
-    return userMapper.fromEntityToUserDetailsDto(user);
-  }
-
-  @Override
   public String createUserOrder(UserOrder userOrder)
       throws JsonProcessingException {
     return producer.sendMessage(userOrder);

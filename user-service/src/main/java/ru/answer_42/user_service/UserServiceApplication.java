@@ -11,9 +11,12 @@ import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -39,6 +42,7 @@ public class UserServiceApplication {
 	}
 
 
+	private final static String USER_API = "/api/users";
 	@Bean
 	public TokenCookieJweStringSerializer tokenCookieJweStringSerializer(
 			@Value("${jwt.cookie-token-key}") String cookieTokenKey
@@ -67,27 +71,42 @@ public class UserServiceApplication {
 			TokenCookieAuthenticationConfigurer tokenCookieAuthenticationConfigurer,
 			TokenCookieJweStringSerializer tokenCookieJweStringSerializer) throws Exception {
 
+		// Внедряется бин который сериализует экземпляр объекта класса токен в JWE токен
 		var tokenCookieSessionAuthenticationStrategy = new TokenCookieSessionAuthenticationStrategy();
 		tokenCookieSessionAuthenticationStrategy.setTokenStringSerializer(tokenCookieJweStringSerializer);
 
+		// басик реализация аутентификации
 		http.httpBasic(Customizer.withDefaults())
+				//Добавление фильтра для получение csrf токена
 				.addFilterAfter(new GetCsrfTokenFilter(), ExceptionTranslationFilter.class)
 				.authorizeHttpRequests(authorizeHttpRequest -> {
 					authorizeHttpRequest
-							.requestMatchers("/error", "/test", "/test/v2").hasRole("USER")
-							.requestMatchers("/swagger-ui/**", "/v3/api-docs*/**").permitAll();
+							.requestMatchers(HttpMethod.GET, USER_API + "/downloadUrl/**").hasAnyRole("USER", "ADMIN")
+							.requestMatchers(HttpMethod.POST, USER_API + "/create").hasRole("ADMIN")
+							.requestMatchers(HttpMethod.GET, USER_API).hasRole("ADMIN")
+							.requestMatchers(HttpMethod.PUT, USER_API).hasAnyRole("USER", "ADMIN")
+							.requestMatchers(HttpMethod.DELETE, USER_API+"/{file_id}").hasRole("ADMIN")
+							.requestMatchers(HttpMethod.GET, USER_API + "/files").hasAnyRole("USER", "ADMIN")
+							.requestMatchers("/swagger-ui/**", "/v3/api-docs*/**").permitAll()
+							.anyRequest().authenticated();
 
 				})
 				.sessionManagement(sessionManagement -> sessionManagement
+						// отключение сессии, что бы при каждом запросе клиент отправлял токен
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+						// Установка стратегии для аутентификации
 						.sessionAuthenticationStrategy(tokenCookieSessionAuthenticationStrategy))
 				.csrf(csrf -> {
+					// по умолчанию csrf токен привязан к сессий, здесь меняем на cookie repository
 					csrf.csrfTokenRepository(new CookieCsrfTokenRepository())
+							// Ищет csrf токен в атрибутах запросу
 							.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+							// стратегия не обновляет csrf токен
 							.sessionAuthenticationStrategy(((authentication, request, response) -> {}));
 				});
 		http.apply(tokenCookieAuthenticationConfigurer);
 		return http.build();
 	}
+
 
 }
