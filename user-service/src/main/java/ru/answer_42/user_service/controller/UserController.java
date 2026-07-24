@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
@@ -15,12 +16,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +32,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import ru.answer_42.user_service.dto.FileDownloadDto;
 import ru.answer_42.user_service.exception.TimeLimitException;
 import ru.answer_42.user_service.model.FileOrder;
@@ -149,5 +154,15 @@ public class UserController{
   public ResponseEntity<UserResponseDto> delete(@PathVariable @NotNull UUID userId){
     UserResponseDto userResponseDto = userService.deleteById(userId);
     return new ResponseEntity<>(userResponseDto, HttpStatus.OK);
+  }
+
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "Токен пользователя успешно получен")
+  })
+  @Operation(summary = "Токен пользователя получен", description = "В ответе возвращается токен пользователя")
+  @GetMapping("/token")
+  public ResponseEntity<String> getUserToken(@CookieValue(value = "__Host-auth-token", required = false) String tokenCookie){
+    String token = tokenCookie.replace("__Host-auth-token", "");
+    return new ResponseEntity<>(token, HttpStatus.OK);
   }
 }

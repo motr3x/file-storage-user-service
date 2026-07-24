@@ -87,6 +87,7 @@ public class UserServiceApplication {
 							.requestMatchers(HttpMethod.PUT, USER_API).hasAnyRole("USER", "ADMIN")
 							.requestMatchers(HttpMethod.DELETE, USER_API+"/{file_id}").hasRole("ADMIN")
 							.requestMatchers(HttpMethod.GET, USER_API + "/files").hasAnyRole("USER", "ADMIN")
+							.requestMatchers(HttpMethod.GET, USER_API + "/token").hasAnyRole("USER", "ADMIN")
 							.requestMatchers("/swagger-ui/**", "/v3/api-docs*/**").permitAll()
 							.anyRequest().authenticated();
 
