@@ -2,12 +2,18 @@ package ru.answer_42.user_service.security;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.JWEHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -22,9 +28,10 @@ public class TokenCookieJweStringSerializer implements Function<Token, String> {
   private EncryptionMethod encryptionMethod = EncryptionMethod.A128GCM;
 
 
+  @SneakyThrows
   @Override
   public String apply(Token token) {
-    var jwsHeader = new JWEHeader.Builder(this.jweAlgorithm, this.encryptionMethod)
+    var jweHeader = new JWEHeader.Builder(this.jweAlgorithm, this.encryptionMethod)
         .keyID(token.id().toString())
         .build();
     var claimsSet = new JWTClaimsSet.Builder()
@@ -34,7 +41,7 @@ public class TokenCookieJweStringSerializer implements Function<Token, String> {
         .expirationTime(Date.from(token.expiresAt()))
         .claim("authorities", token.authorities())
         .build();
-    var encryptedJWT = new EncryptedJWT(jwsHeader, claimsSet);
+    var encryptedJWT = new EncryptedJWT(jweHeader, claimsSet);
     try {
       encryptedJWT.encrypt(this.jweEncrypter);
 

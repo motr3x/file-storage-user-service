@@ -101,7 +101,7 @@ public class StorageController {
               schema = @Schema(implementation = FileIsUnderScanException.class))})
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
-  @GetMapping("/{userId}/{filename:.+}")
+  @GetMapping("/{filename:.+}")
   public ResponseEntity<Resource> serveFile(
       @Parameter(
           description = "Токен пользователя, который сохраняет файл в хранилище",
@@ -132,7 +132,7 @@ public class StorageController {
               schema = @Schema(implementation = AccessDeniedException.class))}),
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
-  @PostMapping("/{userId}")
+  @PostMapping()
   public ResponseEntity<Resource> serveFiles(
       @Parameter(
           description = "Токен пользователя, который сохраняет файл в хранилище",
