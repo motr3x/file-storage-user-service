@@ -34,7 +34,6 @@ import ru.answer_42.file_storage_service.service.UserOrderService;
 public class FileServiceImpl implements FileService {
 
   private final FileRepository fileRepository;
-  private final UserOrderService userOrderService;
   private final FileMapper fileMapper;
   private final Producer producer;
 
@@ -65,9 +64,8 @@ public class FileServiceImpl implements FileService {
   @Override
   @Transactional
   public FileResponseDto save(UUID userId, FileRequestDto fileMetadataRequestDto) {
-    UserOrder userOrder = userOrderService.findById(userId);
     File file = fileMapper.toEntity(fileMetadataRequestDto);
-    file.setUserId(userOrder.getUserId());
+    file.setUserId(userId);
     file.setCreatedAt(LocalDate.now());
     file.setUpdateDate(LocalDate.now());
     return fileMapper.toFileResponseDto(fileRepository.save(file));
