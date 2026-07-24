@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import ru.answer_42.user_service.dto.FileDownloadDto;
+import ru.answer_42.user_service.dto.UserDetailsDto;
 import ru.answer_42.user_service.dto.UserOrder;
 import ru.answer_42.user_service.dto.UserRequestDto;
 import ru.answer_42.user_service.dto.UserResponseDto;
@@ -31,7 +32,6 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
   private final Producer producer;
   private final FileOrderRepository fileOrderRepository;
-
 
   @Override
   public String createUserOrder(UserOrder userOrder)

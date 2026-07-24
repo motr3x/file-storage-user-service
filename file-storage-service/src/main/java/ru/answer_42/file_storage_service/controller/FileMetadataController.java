@@ -8,7 +8,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
@@ -23,15 +22,16 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ru.answer_42.file_storage_service.dto.FileRequestDto;
 import ru.answer_42.file_storage_service.dto.FileResponseDto;
 import ru.answer_42.file_storage_service.exception.ResourceNotFoundException;
-import ru.answer_42.file_storage_service.exception.Response;
 import ru.answer_42.file_storage_service.model.Type;
 import ru.answer_42.file_storage_service.service.FileService;
+import ru.answer_42.file_storage_service.service.JwtService;
 
 @RestController
 @RequestMapping("/api/files")
@@ -43,6 +43,7 @@ public class FileMetadataController {
   //400 - неправильные данные
 
   private final FileService fileService;
+  private final JwtService jwtService;
 
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "Ссылка скачивания успешно получена",
@@ -51,16 +52,16 @@ public class FileMetadataController {
   @Operation(
       summary = "Получить ссылку на скачивание",
       description = "В ответе возвращается ссылка на скачивание")
-  @GetMapping("/downloadUrl/{userId}/{fileId}")
+  @GetMapping("/downloadUrl/{fileId}")
   public ResponseEntity<String> getDownloadUrl(
       @Parameter(
-          description = "Id пользователя, ссылка на скачивание файла которого получаются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который получает ссылку на файл",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "Id файла, ссылка на скачивание которого получается",
           required = true)
-      @PathVariable @NotNull UUID fileId){
+      @PathVariable @NotNull UUID fileId) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     return ResponseEntity.ok(fileService.getFileUrl(userId, fileId));
   }
 
@@ -71,8 +72,13 @@ public class FileMetadataController {
   @Operation(
       summary = "Получить размер файла",
       description = "В ответе возвращается размер файла")
-  @GetMapping("/fileSize/{userId}/{fileId}")
-  public ResponseEntity<Long> getFileSize(@PathVariable @NotNull UUID userId, @PathVariable @NotNull UUID fileId){
+  @GetMapping("/fileSize/{fileId}")
+  public ResponseEntity<Long> getFileSize(
+      @Parameter(
+          description = "Токен пользователя, который получает размер файла",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
+      @PathVariable @NotNull UUID fileId) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     return ResponseEntity.ok(fileService.getFileSize(userId, fileId));
   }
 
@@ -85,16 +91,16 @@ public class FileMetadataController {
   @Operation(
       summary = "Создать объект с метаданными переданного файла",
       description = "В ответе возвращается созданные метаданными файла")
-  @PostMapping("/{userId}")
+  @PostMapping("")
   public ResponseEntity<FileResponseDto> create(
       @Parameter(
-          description = "Id пользователя, метаданными о файле по которому сохраняются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, метаданный файла которого сохраняются",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "Метаданными о файле, который сохраняют",
           required = true)
-      @RequestBody @NotNull @Valid FileRequestDto fileMetadataRequestDto) {
+      @RequestBody @NotNull @Valid FileRequestDto fileMetadataRequestDto) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     FileResponseDto fileResponseDto = fileService.save(userId, fileMetadataRequestDto);
     return new ResponseEntity<>(fileResponseDto, HttpStatus.CREATED);
   }
@@ -110,16 +116,16 @@ public class FileMetadataController {
       summary = "Получить метаданные файла по id",
       description = "В ответе возвращается желаемые метаданные файла")
   @Tag(name = "get", description = "GET-методы file API")
-  @GetMapping("/{userId}/{fileId}")
+  @GetMapping("/{fileId}")
   public ResponseEntity<FileResponseDto> readById(
       @Parameter(
-          description = "Id пользователя, метаданными о файле по которому сохраняются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который получает метаданные файла",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "ID метаданных файла, по которым идет запрос",
           required = true)
-      @PathVariable @NotNull UUID fileId) {
+      @PathVariable @NotNull UUID fileId) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     FileResponseDto fileResponseDto = fileService.findByUserIdAndId(userId, fileId);
     return ResponseEntity.ok(fileResponseDto);
   }
@@ -136,12 +142,11 @@ public class FileMetadataController {
   @Operation(
       summary = "Обновить метаданные файла с определенным id",
       description = "В ответе возвращается обновленные метаданные файла")
-  @PutMapping("/{userId}/{fileId}")
+  @PutMapping("/{fileId}")
   public ResponseEntity<FileResponseDto> update(
       @Parameter(
-          description = "Id пользователя, метаданными о файле по которому обновляются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который обновляет метаданные файла",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "ID метаданных файла, данные которого обновляются",
           required = true)
@@ -149,7 +154,8 @@ public class FileMetadataController {
       @Parameter(
           description = "Файл с полями, которые стоит обновить у заданного файла",
           required = true)
-      @RequestBody @Valid FileRequestDto fileMetadataRequestDto) {
+      @RequestBody @Valid FileRequestDto fileMetadataRequestDto) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     fileService.findByUserIdAndId(userId, fileId);
     FileResponseDto fileResponseDto = fileService.update(fileId,
         fileMetadataRequestDto);
@@ -167,16 +173,16 @@ public class FileMetadataController {
   @Operation(
       summary = "Удалить метаданные о файле по id",
       description = "В ответе возвращается метаданные о файле, которые были удалены")
-  @DeleteMapping("/{userId}/{fileId}")
+  @DeleteMapping("/{fileId}")
   public ResponseEntity<FileResponseDto> delete(
       @Parameter(
-          description = "Id пользователя, метаданными о файле по которому удаляются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который удаляет метаданные о файле",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "ID метаданных файла, который удаляется",
           required = true)
-      @PathVariable @NotNull UUID fileId) {
+      @PathVariable @NotNull UUID fileId) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     fileService.findByUserIdAndId(userId, fileId);
     FileResponseDto fileResponseDto = fileService.deleteById(fileId);
     return ResponseEntity.ok(fileResponseDto);
@@ -197,8 +203,8 @@ public class FileMetadataController {
   @GetMapping("/{userId}/titles")
   public ResponseEntity<List<String>> getTitles(
       @Parameter(
-          description = "Id пользователя, метаданными о файле по которому запрашиваются",
-          required = true)
+          description = "Токен пользователя, название файлов которого получаются",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @PathVariable @NotNull UUID userId
   ) {
     final List<String> titles = fileService.findAllTitles(userId);
@@ -218,16 +224,15 @@ public class FileMetadataController {
   })
   @Operation(summary = "Получить метаданные о файлах с возможностью фильтрации", description = "В ответе возвращается список метаданными о файлах, прошедших фильтр ")
   @Tag(name = "get", description = "GET-методы file API")
-  @GetMapping("/user/{userId}")
+  @GetMapping("/user")
   public ResponseEntity<List<FileResponseDto>> getUserFilesByFilter(
       @Parameter(
-          description = "Id пользователя, данные о файле по которому запрашиваются",
-          required = true)
-      @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, файлы по которому запрашиваются",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "Фильтр по имени(возможно частичное вхождение)",
           required = false)
-      @RequestParam(required = false)  String name,
+      @RequestParam(required = false) String name,
       @Parameter(
           description = "Фильтр по дате изменения(диапазон от)",
           required = false)
@@ -239,7 +244,8 @@ public class FileMetadataController {
       @Parameter(
           description = "Фильтр по типу (без указания - все, при указании - список переданных типов)",
           required = false)
-      @RequestParam(required = false) Type type) {
+      @RequestParam(required = false) Type type) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     final List<FileResponseDto> files = fileService.findAllByFilter(userId, name, start, end, type);
     return files != null ? new ResponseEntity<>(files, HttpStatus.OK)
         : new ResponseEntity<>(HttpStatus.NOT_FOUND);

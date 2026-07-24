@@ -1,5 +1,11 @@
 package ru.answer_42.file_storage_service.controller;
 
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jose.KeyLengthException;
+import com.nimbusds.jose.crypto.DirectDecrypter;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,10 +15,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import java.text.ParseException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.tomcat.util.http.fileupload.impl.FileSizeLimitExceededException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +43,7 @@ import ru.answer_42.file_storage_service.exception.file.FileIsEmptyException;
 import ru.answer_42.file_storage_service.exception.file.FileIsUnderScanException;
 import ru.answer_42.file_storage_service.exception.file.UnsupportedFileTypeException;
 import ru.answer_42.file_storage_service.exception.storage.StorageStoreFailedException;
+import ru.answer_42.file_storage_service.service.JwtService;
 import ru.answer_42.file_storage_service.service.StorageService;
 
 @RestController
@@ -41,6 +51,7 @@ import ru.answer_42.file_storage_service.service.StorageService;
 @RequiredArgsConstructor
 public class StorageController {
   private final StorageService storageService;
+  private final JwtService jwtService;
 
   @ApiResponses({
       @ApiResponse(responseCode = "201", description = "Файл успешно сохранён в хранилище",
@@ -65,14 +76,15 @@ public class StorageController {
   @Operation(
       summary = "Сохранить файл в хранилище",
       description = "В ответе возвращается метаданные сохраненного файла")
-  @PostMapping("/{userId}/upload")
+  @PostMapping("/upload")
   public ResponseEntity<FileResponseDto> handleFileUpload(
       @Parameter(
-          description = "Id пользователя, который сохраняет файл в хранилище",
-          required = true) @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который сохраняет файл в хранилище",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "Файл, который сохраняется в хранилище",
-          required = true) @RequestParam("file") MultipartFile file) {
+          required = true) @RequestParam("file") MultipartFile file) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     FileResponseDto fileResponseDto = storageService.store(userId, file);
     return new ResponseEntity<>(fileResponseDto, HttpStatus.CREATED);
   }
@@ -89,14 +101,15 @@ public class StorageController {
               schema = @Schema(implementation = FileIsUnderScanException.class))})
   })
   @Operation(summary = "Получить файл по имени", description = "В ответ возвращается желаемый файл")
-  @GetMapping("/{userId}/{filename:.+}")
+  @GetMapping("/{filename:.+}")
   public ResponseEntity<Resource> serveFile(
       @Parameter(
-        description = "Id пользователя, который запрашивает файл из хранилища",
-        required = true) @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который сохраняет файл в хранилище",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
         description = "Имя файла, который запрашивают",
-        required = true) @PathVariable @NotBlank String filename) {
+        required = true) @PathVariable @NotBlank String filename) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     byte[] file = storageService.loadAsResource(userId, filename);
 
     if (file == null) {
@@ -119,15 +132,15 @@ public class StorageController {
               schema = @Schema(implementation = AccessDeniedException.class))}),
   })
   @Operation(summary = "Получить архив с файлами по их id", description = "В ответе возвращается архив с желаемыми файлами")
-  @PostMapping("/{userId}")
+  @PostMapping()
   public ResponseEntity<Resource> serveFiles(
       @Parameter(
-          description = "Id пользователя, который сохраняет архив файлов в хранилище",
-          required = true) @PathVariable @NotNull UUID userId,
+          description = "Токен пользователя, который сохраняет файл в хранилище",
+          required = true) @RequestHeader(value = "Authorization", required = true) String userToken,
       @Parameter(
           description = "Список с id файлов, которые пользователь желает сохранить",
-          required = true) @RequestBody @NotEmpty List<UUID> filesId) {
-
+          required = true) @RequestBody @NotEmpty List<UUID> filesId) throws Exception {
+    UUID userId = jwtService.getUserIdFromToken(userToken);
     Resource resource = storageService.loadAll(userId, filesId);
 
     return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,

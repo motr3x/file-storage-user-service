@@ -10,7 +10,7 @@ spring:
     driverClassName: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   kafka:
@@ -25,3 +25,11 @@ topic:
 api:
   server:
     url: http://localhost:8081
+
+jwt:
+  cookie-token-key: '{"kty":"oct","k":"956PBFst1FguLr5irJD-aQ"}'
+logging:
+  level:
+    org:
+      springframework:
+        security: TRACE

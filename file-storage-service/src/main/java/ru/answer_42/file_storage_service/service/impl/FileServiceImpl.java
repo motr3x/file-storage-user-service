@@ -34,18 +34,8 @@ import ru.answer_42.file_storage_service.service.UserOrderService;
 public class FileServiceImpl implements FileService {
 
   private final FileRepository fileRepository;
-  private final UserOrderService userOrderService;
   private final FileMapper fileMapper;
   private final Producer producer;
-
-  @Override
-  public Boolean ownerCheck(UUID userId, UUID fileId) {
-    File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + fileId));
-    if(file.getUserId().equals(userId)){
-      return Boolean.TRUE;
-    }
-    return Boolean.FALSE;
-  }
 
   @Override
   public Long getFileSize(UUID userId, UUID fileId) {
@@ -74,9 +64,8 @@ public class FileServiceImpl implements FileService {
   @Override
   @Transactional
   public FileResponseDto save(UUID userId, FileRequestDto fileMetadataRequestDto) {
-    UserOrder userOrder = userOrderService.findById(userId);
     File file = fileMapper.toEntity(fileMetadataRequestDto);
-    file.setUserId(userOrder.getUserId());
+    file.setUserId(userId);
     file.setCreatedAt(LocalDate.now());
     file.setUpdateDate(LocalDate.now());
     return fileMapper.toFileResponseDto(fileRepository.save(file));
